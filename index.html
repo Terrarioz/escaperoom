@@ -1,5 +1,432 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Negentropy Protocol - The Fracture Cinematic</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@200;300;400&display=swap');
+
+        :root {
+            --bg: #020203; 
+            --accent: #b4e6ff;
+            --danger: #ff3333;
+            --text-main: #ffffff;
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: var(--bg); overflow: hidden;
+            font-family: 'Space Mono', monospace; color: var(--text-main);
+        }
+
+        #canvas-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10; pointer-events: none; display: flex;
+            flex-direction: column; justify-content: center; align-items: center;
+        }
+
+        #subtitle-container {
+            position: absolute; top: 65%; width: 80%; text-align: center;
+            font-family: 'Inter', sans-serif; font-weight: 300; font-size: 1.5vw;
+            letter-spacing: 4px; line-height: 1.8; text-shadow: 0 0 15px rgba(0,0,0,1);
+            opacity: 0; transition: opacity 1s ease;
+        }
+
+        #title-container {
+            position: absolute; top: 40%; text-align: center; opacity: 0; transition: opacity 2s ease;
+        }
+        #title-container h1 {
+            font-family: 'Inter', sans-serif; font-weight: 200; font-size: 4vw;
+            letter-spacing: 2vw; text-transform: uppercase; margin: 0 0 10px -2vw;
+            text-shadow: 0 0 30px rgba(180, 230, 255, 0.6);
+        }
+        #title-container p {
+            font-family: 'Inter'; font-weight: 200; font-size: 1.5vw; letter-spacing: 1.5vw; color: var(--accent); margin: 0;
+        }
+
+        #boot-terminal {
+            position: absolute; top: 10%; left: 5%; width: 90%;
+            font-size: 1.1vw; color: #5a9; line-height: 2; letter-spacing: 1px;
+            text-shadow: 0 0 8px rgba(85,170,153,0.5); text-align: left; opacity: 0;
+        }
+
+        #start-btn {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: transparent; border: 1px solid var(--accent); color: var(--accent);
+            font-family: 'Space Mono'; padding: 15px 30px; font-size: 1rem;
+            letter-spacing: 2px; cursor: pointer; z-index: 100; transition: 0.3s; pointer-events: auto;
+        }
+        #start-btn:hover { background: rgba(180, 230, 255, 0.2); box-shadow: 0 0 20px rgba(180,230,255,0.4); }
+
+        .glitch-heavy { animation: glitch 0.2s 3; }
+        @keyframes glitch { 
+            0% { transform: translate(0, 0); filter: hue-rotate(0deg); } 
+            25% { transform: translate(-15px, 10px); filter: hue-rotate(90deg); } 
+            50% { transform: translate(15px, -10px); filter: hue-rotate(-90deg); } 
+            75% { transform: translate(-10px, -10px); filter: hue-rotate(180deg); } 
+            100% { transform: translate(0, 0); filter: hue-rotate(0deg); } 
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="canvas-layer"></canvas>
+
+    <div id="ui-layer">
+        <div id="title-container">
+            <h1>The Negentropy</h1>
+            <p>PROTOCOL</p>
+        </div>
+        <div id="subtitle-container"></div>
+        <div id="boot-terminal"></div>
+    </div>
+
+    <button id="start-btn" onclick="startCinematic()">[ ▶ INITIATE PROTOCOL ]</button>
+
+<script>
+    const canvas = document.getElementById('canvas-layer');
+    const ctx = canvas.getContext('2d', { alpha: false }); 
+    let w, h, cx, cy;
+    
+    let time = 0;
+    let phaseTime = 0;
+    let phase = 'IDLE'; 
+    let flashAlpha = 0;
+    let cityColorMode = 'BLUE';
+    let shockwaveRadius = 0; // Shockwave on shatter
+
+    const elTitle = document.getElementById('title-container');
+    const elSub = document.getElementById('subtitle-container');
+    const elBoot = document.getElementById('boot-terminal');
+    const elBtn = document.getElementById('start-btn');
+
+    function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; cx = w / 2; cy = h / 2; }
+    window.addEventListener('resize', resize); resize();
+
+    const lerp = (a, b, t) => a + (b - a) * Math.min(Math.max(t, 0), 1);
+    const easeOutExpo = t => t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+    const easeInQuad = t => t * t;
+
+    // --- 3D ENGINE ---
+    const FOV = 400; const VIEW_DIST = 6;
+    function rotate3D(x, y, z, rx, ry, rz) {
+        let cy1 = Math.cos(rx), sy1 = Math.sin(rx); let y1 = y*cy1 - z*sy1; let z1 = y*sy1 + z*cy1;
+        let cx2 = Math.cos(ry), sx2 = Math.sin(ry); let x2 = x*cx2 + z1*sx2; let z2 = -x*sx2 + z1*cx2;
+        let cx3 = Math.cos(rz), sx3 = Math.sin(rz); let x3 = x2*cx3 - y1*sx3; let y3 = x2*sx3 + y1*cx3;
+        return { x: x3, y: y3, z: z2 };
+    }
+    function project(x, y, z, size = 120) {
+        let scale = FOV / (FOV + z + VIEW_DIST);
+        return { x: cx + x * scale * size, y: cy + y * scale * size, s: scale };
+    }
+
+    // --- DATA ---
+    let buildings = [], rain = [];
+    for(let i=0; i<60; i++) buildings.push({ x: Math.random()*2000, w: 40+Math.random()*100, h: 100+Math.random()*400, speed: 0.5+Math.random()*2 });
+    for(let i=0; i<150; i++) rain.push({ x: Math.random()*3000, y: Math.random()*1000, speed: 15+Math.random()*15 });
+    let meteor = { x: w + 200, y: -200, active: false };
+
+    // Geometry Core (Icosahedron)
+    const phi = (1 + Math.sqrt(5)) / 2;
+    const baseCoreV = [
+        [-1, phi, 0], [1, phi, 0], [-1, -phi, 0], [1, -phi, 0], [0, -1, phi], [0, 1, phi],
+        [0, -1, -phi], [0, 1, -phi], [phi, 0, -1], [phi, 0, 1], [-phi, 0, -1], [-phi, 0, 1]
+    ];
+    let coreV = JSON.parse(JSON.stringify(baseCoreV)); // dynamic core vertices
+    const coreE = [[0,1],[0,5],[0,11],[0,7],[0,10],[1,5],[1,9],[1,8],[1,7],[5,11],[5,4],[5,9],[11,10],[11,2],[11,4],[10,7],[10,6],[10,2],[7,8],[7,6],[8,9],[8,3],[8,6],[9,4],[9,3],[4,2],[4,3],[2,6],[2,3],[6,3]];
+
+    let particles = [];
+    const NUM_PARTICLES = 800; 
+    for(let i=0; i<NUM_PARTICLES; i++) {
+        particles.push({
+            vIdx: i % baseCoreV.length, // target vertex index
+            angle: Math.random() * Math.PI * 2,
+            radius: 2 + Math.random() * 6, 
+            yOff: (Math.random() - 0.5) * 8, 
+            speed: (Math.random() > 0.5 ? 1 : -1) * (0.02 + Math.random() * 0.05),
+            x: 0, y: 0, z: 0,
+            vx: 0, vy: 0, vz: 0,
+            isShattered: false
+        });
+    }
+
+    // --- DIRECTOR CHOREOGRAPHY ---
+    function showSubtitle(text, duration, color = 'var(--text-main)') {
+        elSub.style.opacity = 0;
+        setTimeout(() => {
+            elSub.innerHTML = text; elSub.style.color = color; elSub.style.opacity = 1;
+            setTimeout(() => { elSub.style.opacity = 0; }, duration - 500);
+        }, 500);
+    }
+
+    window.startCinematic = function() {
+        elBtn.style.display = 'none';
+        
+        // 0. TITLE (0-3s)
+        phase = 'TITLE';
+        elTitle.style.opacity = 1;
+        setTimeout(() => { elTitle.style.opacity = 0; }, 2500);
+
+        // 1. CITY (3-7s)
+        setTimeout(() => {
+            phase = 'CITY'; phaseTime = 0;
+            showSubtitle("YEAR 2142. NEO-BABYLON.", 3500);
+        }, 3000);
+
+        // 2. THE FALL (7-10s)
+        setTimeout(() => {
+            phase = 'FALL'; phaseTime = 0;
+            cityColorMode = 'RED'; 
+            meteor.active = true;
+            document.body.classList.add('glitch-heavy');
+            setTimeout(() => document.body.classList.remove('glitch-heavy'), 600);
+            
+            setTimeout(() => { 
+                flashAlpha = 1.0; 
+                phase = 'ASCEND'; phaseTime = 0;
+                showSubtitle("The physical world was extinguished.", 3000, 'var(--danger)');
+            }, 1200); 
+        }, 7000);
+
+        // 3. ASCENSION (10-18s)
+        setTimeout(() => {
+            showSubtitle("To survive, we shed our flesh...", 3500);
+            setTimeout(() => {
+                showSubtitle("Translating consciousness into geometric perfection.", 4000, 'var(--accent)');
+            }, 3500);
+        }, 11000);
+
+        // 4. THE FRACTURE (19-24s)
+        setTimeout(() => {
+            phase = 'FRACTURE'; phaseTime = 0;
+            showSubtitle("But without physical anchors, the digital mind rots.", 4000, 'var(--danger)');
+            
+            document.body.classList.add('glitch-heavy');
+            setTimeout(() => document.body.classList.remove('glitch-heavy'), 600);
+            
+            // Wait 1.5 seconds for mathematical distortion to build up, then POP!
+            setTimeout(() => {
+                flashAlpha = 0.8; 
+                shockwaveRadius = 1; // Trigger visual shockwave
+                
+                particles.forEach(p => {
+                    p.isShattered = true;
+                    // RADIAL EXPLOSION: Explode outwards based on their position relative to center
+                    let len = Math.sqrt(p.x*p.x + p.y*p.y + p.z*p.z) || 1;
+                    let force = 6 + Math.random() * 6; // Explosion force
+                    
+                    p.vx = (p.x / len) * force + (Math.random()-0.5)*3; // Push outward + random twist
+                    p.vy = (p.y / len) * force + (Math.random()-0.5)*3;
+                    p.vz = (p.z / len) * force + (Math.random()-0.5)*3;
+                });
+                
+                setTimeout(() => {
+                    showSubtitle("Subject 001 is facing total cognitive collapse.", 3000);
+                }, 2500);
+            }, 1500); // 1.5s of agonizing warping
+        }, 19000);
+
+        // 5. THE CALL & DIVE (25-29s)
+        setTimeout(() => {
+            showSubtitle("You are the Architect.", 2500, 'var(--accent)');
+            setTimeout(() => {
+                showSubtitle("Dive into the chaos. Rebuild the laws of physics.", 3000);
+                phase = 'DIVE'; phaseTime = 0;
+            }, 2500);
+        }, 25000);
+
+        // 6. BOOT TERMINAL (29.5s+)
+        setTimeout(() => {
+            phase = 'BOOT'; phaseTime = 0;
+            elBoot.style.opacity = 1;
+            const lines = [
+                "> NEURAL DIVE COMPLETE.",
+                "> SCANNING MATRIX FOR PHYSICS VIOLATIONS...",
+                "> 5 SEVERE ANOMALIES DETECTED.",
+                "> WAITING FOR ARCHITECT OVERRIDE..."
+            ];
+            let lIdx = 0;
+            let typeInterval = setInterval(() => {
+                if(lIdx < lines.length) { elBoot.innerHTML += lines[lIdx] + '<br>'; lIdx++; }
+                else clearInterval(typeInterval);
+            }, 600);
+        }, 30500);
+
+        animate();
+    }
+
+    // --- RENDERERS ---
+
+    function renderCity() {
+        let baseColor = cityColorMode === 'BLUE' ? '180, 230, 255' : '255, 50, 50';
+        
+        ctx.fillStyle = `rgba(${baseColor}, 0.4)`;
+        rain.forEach(r => { r.y += r.speed; r.x -= 3; if(r.y > h) { r.y = -10; r.x = Math.random()*w*1.5; } ctx.fillRect(r.x, r.y, 1, 15); });
+
+        ctx.lineWidth = 1;
+        buildings.forEach(b => {
+            b.x -= b.speed; if(b.x + b.w < 0) b.x = w + Math.random()*200;
+            ctx.strokeStyle = `rgba(${baseColor}, ${0.05 + Math.random()*0.15})`; 
+            ctx.fillStyle = 'rgba(0,0,0,1)';
+            ctx.beginPath(); ctx.rect(b.x, h - b.h, b.w, b.h); ctx.fill(); ctx.stroke();
+            if(Math.random() > 0.95) { ctx.fillStyle = `rgba(${baseColor}, 0.6)`; ctx.fillRect(b.x + 10, h - b.h + 20 + Math.random()*(b.h-40), 5, 5); }
+        });
+        
+        ctx.strokeStyle = `rgba(${baseColor}, 0.1)`; ctx.beginPath(); ctx.moveTo(0, h-10); ctx.lineTo(w, h-10); ctx.stroke();
+
+        if(meteor.active) {
+            meteor.x -= 40; meteor.y += 25;
+            ctx.beginPath(); ctx.moveTo(meteor.x, meteor.y); ctx.lineTo(meteor.x + 300, meteor.y - 150);
+            ctx.strokeStyle = 'white'; ctx.lineWidth = 5; ctx.shadowBlur = 30; ctx.shadowColor = 'red'; ctx.stroke();
+            ctx.beginPath(); ctx.arc(meteor.x, meteor.y, 15, 0, Math.PI*2); ctx.fillStyle='white'; ctx.fill();
+            ctx.shadowBlur = 0; 
+        }
+    }
+
+    function renderSwarmAndFracture(t) {
+        // Base global rotation
+        let rotX = time * 0.2;
+        let rotY = time * 0.5;
+        
+        // --- 1. THE MATHEMATICAL DISTORTION (Geometry Breakdown) ---
+        let distortionAmt = 0;
+        if (phase === 'FRACTURE' && phaseTime < 1.5) {
+            // Exponentially increase distortion over 1.5s before shatter
+            distortionAmt = easeInQuad(phaseTime / 1.5); 
+            // Vibrate rotation heavily
+            rotX += Math.sin(time * 50) * 0.1 * distortionAmt;
+            rotY += Math.cos(time * 60) * 0.1 * distortionAmt;
+        }
+
+        // Distort the target core vertices dynamically based on sine waves (Physics failing)
+        for(let i=0; i<baseCoreV.length; i++) {
+            let bv = baseCoreV[i];
+            // Chaotic breathing / axis skewing
+            let scaleErr = 1 + Math.sin(time*20 + i) * 0.5 * distortionAmt;
+            let skewErr = Math.cos(time*15 + i*2) * 1.5 * distortionAmt;
+            
+            coreV[i][0] = (bv[0] * 1.5 * scaleErr) + skewErr;
+            coreV[i][1] = (bv[1] * 1.5 * scaleErr);
+            coreV[i][2] = (bv[2] * 1.5 * scaleErr) - skewErr;
+        }
+
+        // --- 2. PARTICLES LOGIC ---
+        let morphProg = (phase === 'ASCEND') ? Math.max(0, Math.min((phaseTime - 3) / 4, 1)) : 1;
+        let morphEase = easeOutExpo(morphProg);
+
+        let pColor = (phase === 'FRACTURE') ? 'rgba(255, 80, 80, 0.8)' : 'rgba(180, 230, 255, 0.8)';
+        ctx.fillStyle = pColor;
+        ctx.shadowBlur = 0; // Keep zero for performance
+
+        for(let i=0; i<NUM_PARTICLES; i++) {
+            let p = particles[i];
+            
+            if(!p.isShattered) {
+                // Swarm Logic
+                p.angle += p.speed;
+                let swarmX = Math.cos(p.angle) * p.radius;
+                let swarmZ = Math.sin(p.angle) * p.radius;
+                let swarmY = p.yOff;
+
+                let tx = coreV[p.vIdx][0];
+                let ty = coreV[p.vIdx][1];
+                let tz = coreV[p.vIdx][2];
+
+                // Interpolate
+                p.x = lerp(swarmX, tx, morphEase);
+                p.y = lerp(swarmY, ty, morphEase);
+                p.z = lerp(swarmZ, tz, morphEase);
+            } else {
+                // Shattered radial explosion physics
+                p.vx *= 0.95; p.vy *= 0.95; p.vz *= 0.95; // Void friction
+                if (phase === 'DIVE') { p.vz -= 0.4; p.vx *= 1.03; p.vy *= 1.03; } // Camera rushes forward
+                
+                p.x += p.vx; p.y += p.vy; p.z += p.vz;
+            }
+
+            let r = rotate3D(p.x, p.y, p.z, rotX, rotY, 0);
+            let proj = project(r.x, r.y, r.z);
+
+            if(proj.s > 0) {
+                if(phase === 'DIVE') { // Warp motion blur
+                    ctx.globalAlpha = Math.max(0, 1 - Math.abs(p.vz)/20);
+                    ctx.beginPath(); ctx.moveTo(proj.x, proj.y); ctx.lineTo(cx, cy); 
+                    ctx.strokeStyle = 'rgba(180, 230, 255, 0.2)'; ctx.lineWidth = proj.s*2; ctx.stroke();
+                } else {
+                    let size = proj.s * 4;
+                    ctx.fillRect(proj.x - size/2, proj.y - size/2, size, size);
+                }
+            }
+        }
+        ctx.globalAlpha = 1;
+
+        // --- 3. DRAW SACRED GEOMETRY EDGES ---
+        // Only draw if morphed, and if not shattered
+        if(morphProg > 0.8 && (!particles[0].isShattered)) {
+            let edgeAlpha = (morphProg - 0.8) * 5; 
+            
+            ctx.shadowBlur = (phase === 'FRACTURE') ? 30 : 15; 
+            ctx.shadowColor = (phase === 'FRACTURE') ? 'red' : 'rgba(180, 230, 255, 1)';
+            
+            // Flicker visibility during heavy distortion
+            if (phase === 'FRACTURE' && Math.random() < distortionAmt * 0.5) edgeAlpha *= 0.2; 
+            
+            ctx.strokeStyle = `rgba(255, 255, 255, ${edgeAlpha})`; 
+            ctx.lineWidth = 2;
+            
+            let projCoreV = coreV.map(v => project(...Object.values(rotate3D(v[0], v[1], v[2], rotX, rotY, 0))));
+            
+            ctx.beginPath();
+            coreE.forEach(edge => {
+                let p1 = projCoreV[edge[0]], p2 = projCoreV[edge[1]];
+                ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); 
+            });
+            ctx.stroke();
+            ctx.shadowBlur = 0; 
+        }
+
+        // --- 4. SHOCKWAVE EFFECT ---
+        if(shockwaveRadius > 0) {
+            shockwaveRadius += 30; // expand fast
+            ctx.beginPath();
+            ctx.arc(cx, cy, shockwaveRadius, 0, Math.PI*2);
+            ctx.strokeStyle = `rgba(255, 255, 255, ${Math.max(0, 1 - shockwaveRadius/800)})`;
+            ctx.lineWidth = 10;
+            ctx.stroke();
+            if(shockwaveRadius > 1000) shockwaveRadius = 0;
+        }
+    }
+
+    // --- MAIN LOOP ---
+    function animate() {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = (phase === 'DIVE') ? 'rgba(0, 0, 0, 0.6)' : 'rgba(2, 2, 3, 0.4)'; 
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.globalCompositeOperation = 'lighter'; 
+        
+        let dt = 0.016;
+        if(phase !== 'IDLE' && phase !== 'TITLE' && phase !== 'BOOT') {
+            time += dt;
+            phaseTime += dt;
+        }
+
+        if(phase === 'CITY' || phase === 'FALL') renderCity();
+        if(phase === 'ASCEND' || phase === 'FRACTURE' || phase === 'DIVE') renderSwarmAndFracture(time);
+
+        if(flashAlpha > 0) {
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = `rgba(255,255,255,${flashAlpha})`;
+            ctx.fillRect(0, 0, w, h);
+            flashAlpha *= 0.95; 
+            if(flashAlpha < 0.01) flashAlpha = 0;
+        }
+
+        if(phase !== 'BOOT') requestAnimationFrame(animate);
+    }
+</script>
+</body>
+</html>
