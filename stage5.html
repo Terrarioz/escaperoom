@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Level V: Harmonic - The Negentropy Protocol</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@200;300;400&display=swap');
+
+        :root {
+            --bg: #030204; 
+            --accent: #c678dd; 
+            --accent-glow: rgba(198, 120, 221, 0.8);
+            --danger: #bf616a;
+            --text-main: #eceff4;
+            --text-dim: #4c566a;
+            --font-mono: 'Space Mono', monospace;
+            --font-sans: 'Inter', sans-serif;
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: var(--bg); overflow: hidden;
+            font-family: var(--font-mono); color: var(--text-main);
+            user-select: none;
+        }
+
+        #bg-glow {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 50% 50%, rgba(198, 120, 221, 0.05) 0%, rgba(3, 2, 4, 1) 60%);
+            z-index: 0; pointer-events: none;
+        }
+
+        #canvas-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+
+        #hud-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10; pointer-events: none; padding: 3vw; box-sizing: border-box;
+            display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr auto;
+            transition: opacity 2s;
+        }
+
+        .hud-corner { pointer-events: auto; }
+
+        #ui-top-left { grid-column: 1; grid-row: 1; align-self: start; }
+        .sys-title { font-family: var(--font-sans); font-weight: 200; letter-spacing: 6px; font-size: 1.2rem; margin-bottom: 5px; color: var(--text-main); text-transform: uppercase; text-shadow: 0 0 10px rgba(255,255,255,0.2); }
+        .sys-sub { font-size: 0.75rem; color: var(--accent); letter-spacing: 2px; }
+
+        #ui-top-right { grid-column: 2; grid-row: 1; justify-self: end; align-self: start; text-align: right; }
+        .stability-meter { display: flex; gap: 6px; font-size: 1rem; color: var(--text-dim); margin-top: 5px; justify-content: flex-end; }
+        .hex { transition: 0.3s; color: var(--text-main); text-shadow: 0 0 8px rgba(255,255,255,0.3); }
+        .hex.lost { color: var(--danger); opacity: 0.3; text-shadow: none; }
+
+        #ui-bot-left { grid-column: 1; grid-row: 3; align-self: end; max-width: 450px; }
+        .log-title { font-size: 0.7rem; color: var(--text-dim); border-bottom: 1px solid var(--text-dim); padding-bottom: 5px; margin-bottom: 15px; letter-spacing: 2px;}
+        .narrative { font-family: var(--font-sans); font-weight: 300; font-size: 0.85rem; line-height: 1.8; color: #a0a0a0; margin-bottom: 25px; }
+        .objective { font-size: 0.8rem; color: var(--accent); line-height: 1.6; border-left: 2px solid var(--accent); padding-left: 15px; background: rgba(198, 120, 221, 0.05); padding-top: 10px; padding-bottom: 10px; }
+
+        #ui-bot-right { grid-column: 2; grid-row: 3; justify-self: end; align-self: end; min-width: 350px; }
+        .telemetry-box { margin-bottom: 30px; font-size: 0.8rem; line-height: 2.2; }
+        .data-row { display: flex; justify-content: space-between; border-bottom: 1px dashed rgba(255,255,255,0.05); }
+        .data-label { color: #888; }
+        .data-val { font-weight: bold; color: var(--text-dim); letter-spacing: 1px; }
+        .data-val.corrupted { color: var(--danger); text-shadow: 0 0 5px rgba(191, 97, 106, 0.5); }
+        .data-val.decoded { color: var(--text-main); text-shadow: 0 0 8px rgba(255,255,255,0.4); }
+
+        .terminal { background: rgba(0,0,0,0.6); border: 1px solid var(--text-dim); padding: 20px; backdrop-filter: blur(8px); }
+        .input-group { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; font-size: 0.9rem; }
+        
+        input[type="text"] {
+            background: transparent; border: none; border-bottom: 1px solid var(--text-dim);
+            color: var(--text-main); font-family: var(--font-mono); font-size: 1rem;
+            width: 100px; text-align: center; outline: none; transition: 0.3s;
+        }
+        input[type="text"]:focus { border-bottom-color: var(--accent); box-shadow: 0 4px 10px -5px var(--accent-glow); }
+        
+        button {
+            width: 100%; background: transparent; border: 1px solid var(--text-dim);
+            color: var(--text-dim); font-family: var(--font-mono); padding: 10px; cursor: pointer;
+            font-size: 0.75rem; letter-spacing: 2px; transition: 0.3s; text-transform: uppercase;
+        }
+        button.ready { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 10px rgba(198, 120, 221, 0.2); }
+        button.ready:hover { background: rgba(198, 120, 221, 0.15); box-shadow: 0 0 20px rgba(198, 120, 221, 0.4); }
+
+        #reticle { 
+            position: absolute; pointer-events: none; transition: 0.05s ease-out; opacity: 0; 
+            width: 50px; height: 50px; transform: translate(-50%, -50%); z-index: 5;
+            background: radial-gradient(circle, transparent 40%, rgba(198, 120, 221, 0.2) 100%);
+            border: 1px dashed var(--accent); border-radius: 50%;
+        }
+        #reticle::before { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 4px; height: 4px; background: var(--accent); border-radius: 50%; }
+        #reticle::after { content: 'TARGET LOCK'; position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 0.6rem; color: var(--accent); white-space: nowrap; text-shadow: 0 0 5px var(--accent);}
+        
+        #focus-vignette {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;
+            box-shadow: inset 0 0 150px rgba(198, 120, 221, 0.0); transition: 0.5s; z-index: 2;
+        }
+        #focus-vignette.active { box-shadow: inset 0 0 150px rgba(198, 120, 221, 0.08); }
+
+        #death-screen {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            text-align: center; pointer-events: none; opacity: 0; z-index: 100; transition: opacity 2s;
+        }
+        #death-screen h1 {
+            font-family: var(--font-sans); font-weight: 200; font-size: 4vw; letter-spacing: 2vw;
+            color: var(--danger); text-shadow: 0 0 20px var(--danger); margin: 0 0 10px -2vw;
+        }
+        #death-screen p { font-size: 1rem; color: var(--danger); letter-spacing: 5px; opacity: 0.7; }
+
+        .scanlines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px); pointer-events: none; z-index: 3; }
+        
+        .glitch-heavy { animation: glitchH 0.3s infinite; }
+        .ui-corrupted { animation: glitchUI 0.1s infinite; filter: hue-rotate(90deg) contrast(200%); }
+        
+        @keyframes glitchH { 
+            0% { transform: translate(0, 0); filter: drop-shadow(0 0 0 transparent); } 
+            25% { transform: translate(-10px, 5px); filter: drop-shadow(-5px 0 0 red); } 
+            50% { transform: translate(10px, -5px); filter: drop-shadow(5px 0 0 blue); } 
+            75% { transform: translate(-5px, -5px); filter: drop-shadow(-5px 0 0 green); } 
+            100% { transform: translate(0, 0); } 
+        }
+        @keyframes glitchUI {
+            0% { transform: translate(0,0) scale(1); opacity: 1; }
+            50% { transform: translate(-5px, 2px) scale(1.02); opacity: 0.8; }
+            100% { transform: translate(5px, -2px) scale(0.98); opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="bg-glow"></div>
+    <div class="scanlines"></div>
+    <div id="focus-vignette"></div>
+    
+    <canvas id="canvas-layer"></canvas>
+    
+    <div id="reticle"></div>
+
+    <div id="death-screen">
+        <h1>CRITICAL FAILURE</h1>
+        <p>DIMENSIONAL COLLAPSE IMMINENT</p>
+    </div>
+
+    <div id="hud-layer">
+        
+        <div id="ui-top-left" class="hud-corner">
+            <div class="sys-title">LEVEL V: HARMONIC</div>
+            <div class="sys-sub">RESONANCE OVERRIDE (FINAL)</div>
+        </div>
+
+        <div id="ui-top-right" class="hud-corner">
+            <div class="sys-sub" style="color:var(--text-dim);">SYSTEM STABILITY</div>
+            <div class="stability-meter" id="life-meter">
+                <span class="hex">⬡</span><span class="hex">⬡</span><span class="hex">⬡</span><span class="hex">⬡</span><span class="hex">⬡</span>
+            </div>
+        </div>
+
+        <div id="ui-bot-left" class="hud-corner">
+            <div class="log-title">OBSERVATION LOG</div>
+            <div class="narrative">
+                The fundamental oscillatory frequencies have shattered into statistical noise.<br><br>
+                Locate the core anchor nodes within the probability cloud to restore the universal harmonic function.
+            </div>
+            <div class="objective">
+                > TARGET: Calculate the absolute maximum velocity (v_max) of the oscillator.<br>
+                > CONCEPT: Simple Harmonic Motion (SHM) kinematics.
+            </div>
+        </div>
+
+        <div id="ui-bot-right" class="hud-corner">
+            <div class="log-title">EXTRACTED TELEMETRY</div>
+            <div class="telemetry-box" id="telemetry">
+                <div class="data-row"><span class="data-label">Spring Constant (k)</span><span class="data-val corrupted" id="node-0">[ UNKNOWN ]</span></div>
+                <div class="data-row"><span class="data-label">Oscillator Mass (m)</span><span class="data-val corrupted" id="node-1">[ UNKNOWN ]</span></div>
+                <div class="data-row"><span class="data-label">Amplitude (A)</span><span class="data-val corrupted" id="node-2">[ UNKNOWN ]</span></div>
+            </div>
+
+            <div class="terminal">
+                <div class="input-group">
+                    <span>> v_max = </span>
+                    <input type="text" id="answer-input" autocomplete="off" disabled placeholder="LOCKED">
+                    <span> m/s</span>
+                </div>
+                <button id="btn-inject" onclick="checkAnswer()">[ REQUIRES DATA ]</button>
+            </div>
+        </div>
+
+    </div>
+
+<script>
+    const CORRECT_ANSWER = "5";
+    const nodeData = [
+        "k = 400.0 N/m",
+        "m = 4.0 kg",
+        "A = 0.5 m"
+    ];
+
+    let nodesExtracted = [false, false, false];
+    let isSolved = false;
+    let isCollapsed = false;
+    let life = 5;
+
+    const canvas = document.getElementById('canvas-layer');
+    const ctx = canvas.getContext('2d');
+    let w, h, cx, cy;
+    let time = 0;
+    
+    let mx = 0, my = 0;
+    let hoveredNode = -1;
+    let timeScale = 1.0; 
+    let targetTimeScale = 1.0;
+
+    let explodeParticles = [];
+
+    function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; cx = w / 2; cy = h / 2; }
+    window.addEventListener('resize', resize); resize();
+    window.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+
+    const FOV = 600; const VIEW_DIST = 8;
+    function rotate3D(x, y, z, rx, ry, rz) {
+        let cy1 = Math.cos(rx), sy1 = Math.sin(rx); let y1 = y*cy1 - z*sy1; let z1 = y*sy1 + z*cy1;
+        let cx2 = Math.cos(ry), sx2 = Math.sin(ry); let x2 = x*cx2 + z1*sx2; let z2 = -x*sx2 + z1*cx2;
+        let cx3 = Math.cos(rz), sx3 = Math.sin(rz); let x3 = x2*cx3 - y1*sx3; let y3 = x2*sx3 + y1*cx3;
+        return { x: x3, y: y3, z: z2 };
+    }
+    function project(x, y, z, size = 220) { 
+        let scale = FOV / (FOV + z + VIEW_DIST);
+        return { x: cx + x * scale * size, y: cy + y * scale * size, s: scale };
+    }
+
+    // --- HARMONIC POINT CLOUD ---
+    const NUM_PARTICLES = 300;
+    let pointCloud = [];
+
+    for(let i=0; i<NUM_PARTICLES; i++) {
+        let tParam = i / (NUM_PARTICLES - 1);
+        let tX = (tParam - 0.5) * 6; 
+
+        let r = Math.random() * 1.5; 
+        let theta = Math.random() * Math.PI * 2;
+        let phi = Math.acos(2 * Math.random() - 1);
+        let cX = r * Math.sin(phi) * Math.cos(theta);
+        let cY = r * Math.sin(phi) * Math.sin(theta);
+        let cZ = r * Math.cos(phi);
+
+        pointCloud.push({
+            tX: tX, cX: cX, cY: cY, cZ: cZ,
+            randPhase: Math.random() * Math.PI * 2,
+            isNode: false
+        });
+    }
+
+    // --- NODE ADJUSTMENT ---
+    // Explicitly place the 3 nodes safely within the FOV
+    // (In Canvas, negative Y moves the element UP on the screen. -0.8 is a safe distance from the top)
+    const dataNodes = [ 0, 150, 299 ];
+    
+    // Left Satellite (safely centered vertically)
+    pointCloud[0].cX = -2.0; pointCloud[0].cY = 0.5; pointCloud[0].cZ = 0.5; pointCloud[0].isNode = true;
+    
+    // Top-Center Satellite (moved down from -1.8 to -0.8 to stay visible)
+    pointCloud[150].cX = 0; pointCloud[150].cY = -0.8; pointCloud[150].cZ = -0.5; pointCloud[150].isNode = true;
+    
+    // Right Satellite (safely centered vertically)
+    pointCloud[299].cX = 2.0; pointCloud[299].cY = 0.5; pointCloud[299].cZ = 0.5; pointCloud[299].isNode = true;
+
+    let projectedNodes = []; 
+    const lerp = (a, b, t) => a + (b - a) * Math.min(Math.max(t, 0), 1);
+    let stabilizeLerp = 0; 
+
+    // --- INTERACTION ---
+    window.addEventListener('mousedown', () => {
+        if(hoveredNode !== -1 && !nodesExtracted[hoveredNode] && !isSolved && !isCollapsed) {
+            extractData(hoveredNode);
+        }
+    });
+
+    function extractData(idx) {
+        nodesExtracted[idx] = true;
+        const el = document.getElementById('node-' + idx);
+        el.classList.remove('corrupted');
+        const chars = "010101XYZ#*+&";
+        let ticks = 0;
+        
+        let interval = setInterval(() => {
+            ticks++;
+            if(ticks > 15) {
+                clearInterval(interval);
+                el.innerText = nodeData[idx];
+                el.classList.add('decoded');
+                checkAllExtracted();
+            } else {
+                let scram = "";
+                for(let i=0; i<8; i++) scram += chars[Math.floor(Math.random()*chars.length)];
+                el.innerText = scram;
+            }
+        }, 40);
+    }
+
+    function checkAllExtracted() {
+        if(nodesExtracted.every(v => v === true)) {
+            let input = document.getElementById('answer-input');
+            input.disabled = false; input.placeholder = ""; input.focus();
+            let btn = document.getElementById('btn-inject');
+            btn.innerText = "INJECT SOLUTION";
+            btn.classList.add('ready');
+        }
+    }
+
+    function triggerSystemCollapse() {
+        isCollapsed = true;
+        document.body.classList.add('glitch-heavy');
+        
+        let input = document.getElementById('answer-input');
+        input.disabled = true;
+        let btn = document.getElementById('btn-inject');
+        btn.innerText = "SYSTEM COLLAPSE";
+        btn.style.color = "var(--danger)";
+        btn.style.borderColor = "var(--danger)";
+        
+        document.getElementById('hud-layer').classList.add('ui-corrupted');
+        setTimeout(() => { document.getElementById('hud-layer').style.opacity = 0; }, 1000);
+        setTimeout(() => { document.getElementById('death-screen').style.opacity = 1; }, 500);
+        document.getElementById('focus-vignette').classList.remove('active');
+        document.getElementById('reticle').style.opacity = 0;
+
+        pointCloud.forEach(p => {
+            let r = rotate3D(p.cX, p.cY, p.cZ, 0, time*0.5, 0);
+            let force = 4 + Math.random()*8; 
+            let len = Math.sqrt(r.x*r.x + r.y*r.y + r.z*r.z) || 1;
+            explodeParticles.push({
+                x: r.x, y: r.y, z: r.z,
+                vx: (r.x/len)*force + (Math.random()-0.5)*4,
+                vy: (r.y/len)*force + (Math.random()-0.5)*4,
+                vz: (r.z/len)*force + (Math.random()-0.5)*4
+            });
+        });
+    }
+
+    function checkAnswer() {
+        if(!nodesExtracted.every(v => v === true) || isSolved || isCollapsed) return;
+        let input = document.getElementById('answer-input');
+        
+        if(input.value.trim() === CORRECT_ANSWER) {
+            isSolved = true;
+            input.disabled = true;
+            let btn = document.getElementById('btn-inject');
+            btn.innerText = "[ HARMONIC RESTORED ]";
+            btn.style.borderColor = "var(--accent)";
+            btn.style.color = "var(--bg)";
+            btn.style.background = "var(--accent)";
+            btn.style.boxShadow = "0 0 30px rgba(198, 120, 221, 0.8)";
+        } else {
+            life--;
+            input.value = "";
+            input.style.color = "var(--danger)";
+            setTimeout(() => input.style.color = "var(--text-main)", 500);
+
+            let hexes = document.querySelectorAll('.hex');
+            if(life >= 0) hexes[life].classList.add('lost');
+
+            if(life <= 0) triggerSystemCollapse();
+        }
+    }
+
+    document.getElementById('answer-input').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') checkAnswer();
+    });
+
+    // --- RENDER LOOP ---
+    function animate() {
+        ctx.clearRect(0, 0, w, h);
+        
+        if (!isCollapsed) {
+            let distToCenter = Math.hypot(mx - cx, my - cy);
+            let inFocusZone = (distToCenter < 350 && !isSolved);
+            
+            targetTimeScale = inFocusZone ? 0.15 : 1.0;
+            timeScale = lerp(timeScale, targetTimeScale, 0.1); 
+            time += 0.02 * timeScale; 
+
+            let vignette = document.getElementById('focus-vignette');
+            if(inFocusZone) vignette.classList.add('active');
+            else vignette.classList.remove('active');
+
+            if(isSolved && stabilizeLerp < 1) stabilizeLerp += 0.015;
+
+            ctx.globalCompositeOperation = 'lighter';
+
+            hoveredNode = -1;
+            projectedNodes = [];
+
+            let camRy = time * 0.5;
+            let camRx = Math.sin(time*0.5) * 0.2;
+
+            if(stabilizeLerp > 0) {
+                ctx.beginPath();
+                for(let i=0; i<NUM_PARTICLES; i++) {
+                    let p = pointCloud[i];
+                    let waveY = Math.sin(p.tX * 2 - time * 5) * 1.2;
+                    let waveZ = Math.cos(p.tX * 2 - time * 5) * 1.2;
+                    let cX = lerp(p.cX, p.tX, stabilizeLerp);
+                    let cY = lerp(p.cY, waveY, stabilizeLerp);
+                    let cZ = lerp(p.cZ, waveZ, stabilizeLerp);
+                    let r = rotate3D(cX, cY, cZ, camRx, camRy, 0);
+                    let proj = project(r.x, r.y, r.z);
+                    if(i === 0) ctx.moveTo(proj.x, proj.y);
+                    else ctx.lineTo(proj.x, proj.y);
+                }
+                ctx.strokeStyle = `rgba(198, 120, 221, ${stabilizeLerp * 0.3})`;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            // PASS 1: Draw regular particles (so they don't cover the nodes)
+            pointCloud.forEach((p, i) => {
+                if(p.isNode) return; 
+                
+                let vibX = Math.sin(time * 20 + p.randPhase) * 0.15 * (1 - stabilizeLerp);
+                let vibY = Math.cos(time * 23 + p.randPhase) * 0.15 * (1 - stabilizeLerp);
+                let vibZ = Math.sin(time * 27 + p.randPhase) * 0.15 * (1 - stabilizeLerp);
+
+                let waveY = Math.sin(p.tX * 2 - time * 5) * 1.2;
+                let waveZ = Math.cos(p.tX * 2 - time * 5) * 1.2;
+
+                let cX = lerp(p.cX + vibX, p.tX, stabilizeLerp);
+                let cY = lerp(p.cY + vibY, waveY, stabilizeLerp);
+                let cZ = lerp(p.cZ + vibZ, waveZ, stabilizeLerp);
+
+                let r = rotate3D(cX, cY, cZ, camRx, camRy, 0);
+                let proj = project(r.x, r.y, r.z);
+
+                if(proj.s > 0) {
+                    let color = isSolved ? 'rgba(198, 120, 221, ' : 'rgba(180, 180, 200, ';
+                    ctx.fillStyle = color + (0.3 + Math.random()*0.4) + ')';
+                    let s = proj.s * (isSolved ? 3 : 1.5);
+                    ctx.fillRect(proj.x, proj.y, s, s);
+                }
+            });
+
+            // PASS 2: Draw the 3 Data Nodes ON TOP
+            pointCloud.forEach((p, i) => {
+                if(!p.isNode) return;
+                let nIdx = dataNodes.indexOf(i);
+
+                let vibX = Math.sin(time * 20 + p.randPhase) * 0.15 * (1 - stabilizeLerp);
+                let vibY = Math.cos(time * 23 + p.randPhase) * 0.15 * (1 - stabilizeLerp);
+                let vibZ = Math.sin(time * 27 + p.randPhase) * 0.15 * (1 - stabilizeLerp);
+
+                let waveY = Math.sin(p.tX * 2 - time * 5) * 1.2;
+                let waveZ = Math.cos(p.tX * 2 - time * 5) * 1.2;
+
+                let cX = lerp(p.cX + vibX, p.tX, stabilizeLerp);
+                let cY = lerp(p.cY + vibY, waveY, stabilizeLerp);
+                let cZ = lerp(p.cZ + vibZ, waveZ, stabilizeLerp);
+
+                let r = rotate3D(cX, cY, cZ, camRx, camRy, 0);
+                let proj = project(r.x, r.y, r.z);
+
+                if(proj.s > 0) {
+                    let s = proj.s * 10; // Extra large
+                    let dist = Math.hypot(proj.x - mx, proj.y - my);
+                    if(dist < 60 && !isSolved) hoveredNode = nIdx;
+
+                    let color = nodesExtracted[nIdx] ? 'rgba(198, 120, 221, 1)' : 'rgba(255, 60, 60, 1)';
+                    if(isSolved) color = 'rgba(255,255,255,0.8)';
+                    
+                    ctx.beginPath(); ctx.arc(proj.x, proj.y, s*1.5, 0, Math.PI*2);
+                    ctx.fillStyle = color.replace('1)', '0.5)'); ctx.fill();
+                    ctx.fillStyle = color; ctx.fillRect(proj.x - s/2, proj.y - s/2, s, s);
+                    
+                    projectedNodes[nIdx] = {x: proj.x, y: proj.y};
+                }
+            });
+
+            // Reticle Snapping
+            let reticle = document.getElementById('reticle');
+            if(hoveredNode !== -1 && !nodesExtracted[hoveredNode]) {
+                reticle.style.opacity = 1;
+                reticle.style.left = projectedNodes[hoveredNode].x + 'px';
+                reticle.style.top = projectedNodes[hoveredNode].y + 'px';
+            } else {
+                reticle.style.opacity = 0;
+            }
+
+            if(stabilizeLerp > 0.9) {
+                ctx.beginPath();
+                ctx.arc(cx, cy, 100, 0, Math.PI*2);
+                ctx.fillStyle = 'rgba(198, 120, 221, 0.05)';
+                ctx.shadowBlur = 100; ctx.shadowColor = 'var(--accent)';
+                ctx.fill(); ctx.shadowBlur = 0;
+            }
+
+        } else {
+            // SYSTEM COLLAPSE
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.fillStyle = 'rgba(255, 60, 60, 0.9)'; 
+            
+            explodeParticles.forEach(p => {
+                p.x += p.vx; p.y += p.vy; p.z += p.vz;
+                p.vz -= 0.5; p.vx *= 1.01; p.vy *= 1.01;
+                
+                let proj = project(p.x, p.y, p.z);
+                if(proj.s > 0) {
+                    ctx.beginPath(); ctx.arc(proj.x, proj.y, proj.s * 5, 0, Math.PI*2); ctx.fill();
+                    ctx.globalAlpha = Math.max(0, 1 - Math.abs(p.vz)/20);
+                    ctx.beginPath(); ctx.moveTo(proj.x, proj.y); ctx.lineTo(cx, cy); 
+                    ctx.strokeStyle = 'rgba(255, 60, 60, 0.4)'; ctx.lineWidth = proj.s*3; ctx.stroke();
+                    ctx.globalAlpha = 1;
+                }
+            });
+        }
+
+        requestAnimationFrame(animate);
+    }
+
+    animate();
+
+</script>
+</body>
+</html>
