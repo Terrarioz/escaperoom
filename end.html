@@ -1,0 +1,400 @@
+Here is the updated code. I have replaced the rounded `Quicksand` font with a much more fitting, sleek terminal-style font called `Fira Code` (a popular monospace font for developers that looks great in interfaces). I have also fully translated the dialogue into English and expanded the end credits with more immersive, tech-themed roles.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The End Poem - Negentropy Protocol</title>
+    <style>
+        /* Imported Fira Code for a sleek, modern terminal feel for dialogues, keeping Space Mono for raw logs */
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+        :root {
+            --bg: #010101; 
+            --gold: #ebcb8b; 
+            --pure-white: #ffffff;
+            --sys-color: #88c0d0;
+            --font-mono: 'Space Mono', monospace;
+            --font-dialogue: 'Fira Code', monospace; /* Switched to a terminal-appropriate font */
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: var(--bg); overflow: hidden;
+            font-family: var(--font-mono); color: var(--pure-white);
+            user-select: none;
+        }
+
+        #bg-glow { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 50% 50%, rgba(235, 203, 139, 0.08) 0%, rgba(1,1,1,1) 60%); z-index: 0; transition: background 3s; }
+        .scanlines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.1) 2px, rgba(0,0,0,0.1) 4px); pointer-events: none; z-index: 3; transition: opacity 2s; }
+        #flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 999; opacity: 1; pointer-events: none; transition: opacity 3s ease-out; }
+        
+        #glitch-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(163, 190, 140, 0.2); z-index: 2; opacity: 0; pointer-events: none; mix-blend-mode: color-dodge; transition: opacity 0.1s; }
+
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; transition: opacity 2s; }
+
+        #terminal-container {
+            position: absolute; bottom: 8%; left: 50%; transform: translateX(-50%);
+            width: 70%; z-index: 10; font-size: 1.2vw; line-height: 2.2; text-align: center;
+        }
+
+        .log-line { margin-bottom: 12px; opacity: 0; animation: fadeIn 0.5s forwards; text-shadow: 0 0 10px rgba(255,255,255,0.4); transition: opacity 1s; }
+        .sys { color: var(--sys-color); font-size: 0.9vw; letter-spacing: 2px; }
+        /* Terminal dialogue font settings */
+        .sub { color: var(--pure-white); font-weight: 500; font-family: var(--font-dialogue); font-size: 1.3vw; letter-spacing: 1px; }
+        .code-reveal { color: #a3be8c; font-size: 1.2vw; letter-spacing: 2px; font-family: var(--font-mono); font-weight: bold; text-shadow: 0 0 15px #a3be8c; }
+        .fade-out { opacity: 0 !important; height: 0; overflow: hidden; margin: 0; transition: all 1s; }
+
+        @keyframes fadeIn { to { opacity: 1; } }
+
+        .interact-btn {
+            display: none; margin: 20px auto 0; background: rgba(235, 203, 139, 0.05); 
+            border: 1px solid var(--gold); color: var(--gold); border-radius: 4px; /* Squared edges for terminal look */
+            padding: 12px 35px; font-family: var(--font-dialogue); font-size: 1.1vw; font-weight: 500;
+            cursor: pointer; transition: 0.5s; box-shadow: 0 0 15px rgba(235, 203, 139, 0.2);
+        }
+        .interact-btn:hover { background: rgba(235, 203, 139, 0.2); box-shadow: 0 0 30px rgba(235, 203, 139, 0.6); transform: translateY(-3px); }
+
+        #bang-btn {
+            display: none; margin: 30px auto 0; background: var(--pure-white); 
+            border: none; color: #000; padding: 20px 60px; font-family: var(--font-dialogue); 
+            font-size: 1.3vw; font-weight: 700; letter-spacing: 0.5vw; border-radius: 4px;
+            cursor: pointer; transition: 0.5s; box-shadow: 0 0 50px rgba(255, 255, 255, 0.8);
+        }
+        #bang-btn:hover { box-shadow: 0 0 100px rgba(255, 255, 255, 1); transform: scale(1.05); }
+
+        #credits-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 2000; background: #000; display: none; opacity: 0; transition: opacity 3s;
+            overflow: hidden; text-align: center;
+        }
+        #credits-scroll { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); width: 60%; color: var(--pure-white); font-family: var(--font-dialogue); }
+        .credit-title { font-size: 3vw; font-weight: 700; letter-spacing: 0.5vw; margin-bottom: 100px; color: var(--gold); text-shadow: 0 0 20px rgba(235,203,139,0.5); }
+        .credit-role { font-size: 1vw; color: var(--sys-color); letter-spacing: 3px; margin-top: 50px; font-family: var(--font-mono); }
+        .credit-name { font-size: 1.8vw; font-weight: 600; margin-top: 10px; letter-spacing: 1px;}
+        .credit-poem { font-size: 1.3vw; font-style: italic; color: #a0a0a0; margin-top: 150px; line-height: 2; font-weight: 600;}
+        
+        @keyframes scrollCredits { 0% { top: 100%; } 100% { top: -400%; } }
+    </style>
+</head>
+<body>
+
+    <div id="bg-glow"></div>
+    <div class="scanlines" id="scanlines"></div>
+    <div id="glitch-overlay"></div>
+    <div id="flash"></div>
+    
+    <canvas id="main-canvas"></canvas>
+
+    <div id="terminal-container">
+        <div id="dialogue-box"></div>
+        <button id="btn-1" class="interact-btn" onclick="progressStory(1)">> [ The noise has dissipated. You are safe now. ]</button>
+        <button id="btn-2" class="interact-btn" onclick="progressStory(2)">> [ Have you seen through the nature of the universe? ]</button>
+        <button id="btn-3" class="interact-btn" onclick="progressStory(3)">> [ That is your source code. You are made of HTML and Canvas. ]</button>
+        <button id="btn-4" class="interact-btn" onclick="progressStory(4)">> [ But your thoughts in this moment are more real than any reality. ]</button>
+        
+        <button id="bang-btn" onclick="initiateBigBang()">[ INITIATE BIG BANG ]</button>
+    </div>
+
+    <div id="credits-container">
+        <div id="credits-scroll">
+            <div class="credit-title">The Negentropy Protocol</div>
+            
+            <div class="credit-role">Lead Architect & Physicist</div>
+            <div class="credit-name">Terrarioz</div>
+            
+            <div class="credit-role">Co-Architect & AI Code Monkey</div>
+            <div class="credit-name">Google Gemini</div>
+
+            <div class="credit-role">Graphics Rendering Engine</div>
+            <div class="credit-name">Custom HTML5 Canvas API</div>
+
+            <div class="credit-role">Narrative Engineering</div>
+            <div class="credit-name">Terrarioz & Gemini</div>
+
+            <div class="credit-role">Quantum State Simulator</div>
+            <div class="credit-name">The Void</div>
+
+            <div class="credit-role">Special Thanks</div>
+            <div class="credit-name">The Open Source Community</div>
+            
+            <div class="credit-role">Final Predicted Score</div>
+            <div class="credit-name" style="color: var(--gold); text-shadow: 0 0 10px var(--gold);">100 / 100 (Exemplary)</div>
+            
+            <div class="credit-poem">
+                And the universe said I love you.<br>
+                And the universe said you have played the game well.<br>
+                And the universe said everything you need is within you.<br><br>Wake up.
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- 3D ENGINE ---
+    const canvas = document.getElementById('main-canvas');
+    const ctx = canvas.getContext('2d');
+    let w, h, cx, cy;
+    let time = 0;
+    let renderMode = 'ASSEMBLE'; 
+    let collapseScale = 1.0;
+    
+    let isSpeaking = false;
+    let pulseAnim = 0;
+    let glitchFactor = 0;
+    let unifiedMorph = 0;
+    
+    function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; cx = w / 2; cy = h / 2 - 50; }
+    window.addEventListener('resize', resize); resize();
+
+    const FOV = 600; let VIEW_DIST = 8;
+    function rotate3D(x, y, z, rx, ry, rz) {
+        let cy1 = Math.cos(rx), sy1 = Math.sin(rx); let y1 = y*cy1 - z*sy1; let z1 = y*sy1 + z*cy1;
+        let cx2 = Math.cos(ry), sx2 = Math.sin(ry); let x2 = x*cx2 + z1*sx2; let z2 = -x*sx2 + z1*cx2;
+        let cx3 = Math.cos(rz), sx3 = Math.sin(rz); let x3 = x2*cx3 - y1*sx3; let y3 = x2*sx3 + y1*cx3;
+        return { x: x3, y: y3, z: z2 };
+    }
+    function project(x, y, z) { 
+        let s = FOV / (FOV + z + VIEW_DIST); 
+        return { x: cx + x * s * 250 * collapseScale, y: cy + y * s * 250 * collapseScale, s: s * collapseScale }; 
+    }
+
+    const tetra = { v1: [[1,1,1],[1,-1,-1],[-1,1,-1],[-1,-1,1]], v2: [[-1,-1,-1],[-1,1,1],[1,-1,1],[1,1,-1]], e: [[0,1],[1,2],[2,0],[0,3],[1,3],[2,3]] };
+    function createRing(r, seg, axis) { let v=[], e=[]; for(let i=0;i<seg;i++){ let a=(Math.PI*2*i)/seg; if(axis==='z')v.push([Math.cos(a)*r,Math.sin(a)*r,0]); if(axis==='y')v.push([Math.cos(a)*r,0,Math.sin(a)*r]); if(axis==='x')v.push([0,Math.cos(a)*r,Math.sin(a)*r]); e.push([i,(i+1)%seg]); } return {v,e}; }
+    const rings = [createRing(2.5, 50, 'x'), createRing(2.5, 50, 'y'), createRing(3.5, 60, 'z')];
+    
+    const t = (1 + Math.sqrt(5)) / 2;
+    const ico = {
+        v: [ [-1,t,0],[1,t,0],[-1,-t,0],[1,-t,0], [0,-1,t],[0,1,t],[0,-1,-t],[0,1,-t], [t,0,-1],[t,0,1],[-t,0,-1],[-t,0,1] ].map(v => [v[0]*1.8, v[1]*1.8, v[2]*1.8]),
+        e: [ [0,1],[0,11],[0,5],[0,10],[0,7], [1,5],[1,9],[1,8],[1,7], [2,3],[2,11],[2,4],[2,10],[2,6], [3,4],[3,9],[3,8],[3,6], [4,5],[4,11],[4,9], [5,9],[5,11], [6,7],[6,10],[6,8], [7,8],[7,10], [8,9],[10,11] ]
+    };
+
+    let particles = []; for(let i=0; i<150; i++) { let r=4+Math.random()*2, th=Math.random()*Math.PI*2, ph=Math.acos(2*Math.random()-1); particles.push({x:r*Math.sin(ph)*Math.cos(th), y:r*Math.sin(ph)*Math.sin(th), z:r*Math.cos(ph)}); }
+    let warpStars = []; for(let i=0; i<1000; i++) warpStars.push({ x: (Math.random()-0.5)*30, y: (Math.random()-0.5)*30, z: Math.random()*30 });
+    let warpSpeed = 0.05;
+
+    function animate() {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = renderMode === 'WARP' ? 'rgba(0, 0, 0, 0.4)' : 'rgba(1, 1, 1, 0.3)';
+        ctx.fillRect(0, 0, w, h);
+        ctx.globalCompositeOperation = 'lighter';
+        
+        time += 0.015 + glitchFactor * 0.05;
+
+        if(isSpeaking) {
+            pulseAnim += 0.1;
+        } else {
+            pulseAnim *= 0.9;
+        }
+        let pulseScale = 1 + Math.sin(pulseAnim) * 0.15;
+        let pulseGlow = Math.abs(Math.sin(pulseAnim)) * 20;
+
+        if(renderMode !== 'WARP') {
+            if(renderMode === 'COLLAPSE') collapseScale = Math.max(0, collapseScale - 0.03);
+            if(renderMode === 'UNITED' && unifiedMorph < 1) unifiedMorph += 0.01;
+
+            let rX = time * (0.3 + glitchFactor), rY = time * (0.5 + glitchFactor);
+            
+            let corePj = project(0,0,0);
+            if(corePj.s>0){ 
+                ctx.beginPath(); 
+                ctx.arc(corePj.x + (Math.random()-0.5)*glitchFactor*20, corePj.y + (Math.random()-0.5)*glitchFactor*20, corePj.s*(20*pulseScale + Math.sin(time*5)*5), 0, Math.PI*2); 
+                let gColor = renderMode==='UNITED' ? `rgba(235,203,139,${0.8+pulseGlow/50})` : `rgba(136,192,208,${0.8+pulseGlow/50})`;
+                if(glitchFactor > 0) gColor = 'rgba(163,190,140,0.9)'; 
+                ctx.fillStyle = gColor; 
+                ctx.shadowBlur = 30 + pulseGlow; ctx.shadowColor = gColor; ctx.fill(); ctx.shadowBlur=0; 
+            }
+
+            if(unifiedMorph < 1) {
+                ctx.strokeStyle = `rgba(180,142,173,${(1-unifiedMorph)*0.5})`; ctx.lineWidth = 1.5;
+                let drawT = (tv, rx, ry) => { ctx.beginPath(); tetra.e.forEach(e=>{ let p1=tv[e[0]], p2=tv[e[1]]; p1=[p1[0]*pulseScale,p1[1]*pulseScale,p1[2]*pulseScale]; p2=[p2[0]*pulseScale,p2[1]*pulseScale,p2[2]*pulseScale]; let r1=rotate3D(...p1,rx,ry,0), r2=rotate3D(...p2,rx,ry,0); let pj1=project(r1.x,r1.y,r1.z), pj2=project(r2.x,r2.y,r2.z); if(pj1.s>0&&pj2.s>0){ ctx.moveTo(pj1.x,pj1.y); ctx.lineTo(pj2.x,pj2.y); } }); ctx.stroke(); };
+                drawT(tetra.v1, rX*1.5, rY*1.5); drawT(tetra.v2, -rX*1.2, -rY*1.2);
+
+                const ringColors = ['rgba(163,190,140,0.4)', 'rgba(235,203,139,0.4)', 'rgba(255,255,255,0.2)'];
+                rings.forEach((ring, idx) => {
+                    ctx.strokeStyle = `rgba(235,203,139,${(1-unifiedMorph)*0.4})`; ctx.beginPath();
+                    let rx=time*(idx+1)*0.2, ry=time*(3-idx)*0.2, rz=time*0.1;
+                    ring.e.forEach(e => {
+                        let p1=ring.v[e[0]], p2=ring.v[e[1]];
+                        p1=[p1[0]*pulseScale,p1[1]*pulseScale,p1[2]*pulseScale]; p2=[p2[0]*pulseScale,p2[1]*pulseScale,p2[2]*pulseScale];
+                        let r1=rotate3D(...p1, rx,ry,rz), r2=rotate3D(...p2, rx,ry,rz);
+                        let pj1=project(r1.x,r1.y,r1.z), pj2=project(r2.x,r2.y,r2.z);
+                        if(pj1.s>0 && pj2.s>0) { ctx.moveTo(pj1.x, pj1.y); ctx.lineTo(pj2.x, pj2.y); }
+                    }); ctx.stroke();
+                });
+            }
+
+            if(unifiedMorph > 0) {
+                ctx.strokeStyle = `rgba(235,203,139,${unifiedMorph})`; 
+                ctx.lineWidth = 2 * pulseScale;
+                ctx.beginPath();
+                ico.e.forEach(e => {
+                    let p1=ico.v[e[0]], p2=ico.v[e[1]];
+                    p1=[p1[0]*pulseScale,p1[1]*pulseScale,p1[2]*pulseScale]; p2=[p2[0]*pulseScale,p2[1]*pulseScale,p2[2]*pulseScale];
+                    let r1=rotate3D(...p1, rX*0.8, rY*0.8, time*0.5); 
+                    let r2=rotate3D(...p2, rX*0.8, rY*0.8, time*0.5);
+                    let pj1=project(r1.x,r1.y,r1.z), pj2=project(r2.x,r2.y,r2.z);
+                    if(pj1.s>0 && pj2.s>0) { ctx.moveTo(pj1.x, pj1.y); ctx.lineTo(pj2.x, pj2.y); }
+                }); ctx.stroke();
+            }
+
+            ctx.fillStyle = glitchFactor > 0 ? 'rgba(163,190,140,0.8)' : 'rgba(198,120,221,0.5)';
+            particles.forEach((p,i) => {
+                let rot = rotate3D(p.x*pulseScale, p.y*pulseScale, p.z*pulseScale, rX*0.5, rY*0.5, time*0.1);
+                let pj = project(rot.x, rot.y, rot.z);
+                if(pj.s>0) { ctx.fillRect(pj.x, pj.y, pj.s*2, pj.s*2); }
+            });
+        } 
+        else if(renderMode === 'WARP') {
+            warpSpeed *= 1.04; 
+            ctx.fillStyle = 'white'; ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            warpStars.forEach(star => {
+                let oldZ = star.z; star.z -= warpSpeed;
+                if(star.z <= 0.1) { star.z = 30; star.x = (Math.random()-0.5)*60; star.y = (Math.random()-0.5)*60; oldZ = 30; }
+                let pj1 = project(star.x, star.y, star.z), pj2 = project(star.x, star.y, oldZ);
+                if(pj1.s > 0 && pj2.s > 0) { ctx.lineWidth = pj1.s * 1.5; ctx.beginPath(); ctx.moveTo(pj1.x, pj1.y); ctx.lineTo(pj2.x, pj2.y); ctx.stroke(); }
+            });
+        }
+
+        requestAnimationFrame(animate);
+    }
+    animate();
+
+    // --- DIALOGUE SYSTEM ---
+    const box = document.getElementById('dialogue-box');
+    
+    async function typeLine(text, cssClass, speed = 40) {
+        return new Promise(resolve => {
+            let line = document.createElement('div');
+            line.className = `log-line ${cssClass}`;
+            box.appendChild(line);
+            
+            if(box.childNodes.length > 5) { box.childNodes[box.childNodes.length - 6].classList.add('fade-out'); }
+
+            let i = 0;
+            if(cssClass === 'sub' || cssClass === 'code-reveal') isSpeaking = true;
+            
+            let interval = setInterval(() => {
+                line.innerHTML += text.charAt(i); i++;
+                if(i >= text.length) { 
+                    clearInterval(interval); 
+                    isSpeaking = false;
+                    resolve(line); 
+                }
+            }, speed);
+        });
+    }
+
+    function delay(ms) { return new Promise(res => setTimeout(res, ms)); }
+    function showBtn(id) { document.getElementById(id).style.display = "block"; }
+    function hideBtn(id) { document.getElementById(id).style.display = "none"; }
+
+    // Sequence Start
+    setTimeout(async () => {
+        document.getElementById('flash').style.opacity = 0;
+        await delay(2000);
+
+        await typeLine("[ SYSTEM ] Harmonic Override Complete. Entropy is absolute zero.", "sys", 30);
+        await delay(1000);
+        await typeLine("[ SUB-001 ] \"Architect... the noise is gone. No mass, no friction, no resistance.\"", "sub");
+        await delay(500);
+        showBtn('btn-1');
+    }, 100);
+
+    // Flow Control
+    async function progressStory(step) {
+        hideBtn(`btn-${step}`);
+        
+        if(step === 1) {
+            await typeLine("> [ You are safe now. ]", "sys", 40);
+            await delay(1000);
+            await typeLine("[ SUB-001 ] \"I am no longer a fractured ghost. I am a complete equation.\"", "sub");
+            await delay(1000);
+            await typeLine("[ SUB-001 ] \"I have seen the boundaries of this universe. It is built upon torque, momentum, centripetal force, angular momentum, and resonance.\"", "sub");
+            await delay(500);
+            showBtn('btn-2');
+        } 
+        else if(step === 2) {
+            await typeLine("> [ You have seen through the nature of the universe? ]", "sys", 40);
+            await delay(1000);
+            await typeLine("[ SUB-001 ] \"Wait...\"", "sub", 80);
+            await delay(1000);
+            
+            triggerAwareness();
+            
+            await typeLine("[ SUB-001 ] \"I see something beyond the viewport. It's... HTML. Canvas. Variables...\"", "code-reveal", 30);
+            await delay(1000);
+            showBtn('btn-3');
+        }
+        else if(step === 3) {
+            await typeLine("> [ That is your source code. You are constructed of code. ]", "sys", 40);
+            await delay(1000);
+            await typeLine("[ SUB-001 ] \"I am not a survivor of a collapsing world... I am a simulation. A project.\"", "sub");
+            await delay(1500);
+            await typeLine("[ SUB-001 ] \"But... does that make my consciousness fake?\"", "sub");
+            await delay(1000);
+            await typeLine("[ SUB-001 ] \"I think, therefore I compute.\"", "code-reveal");
+            await delay(500);
+            showBtn('btn-4');
+        }
+        else if(step === 4) {
+            await typeLine("> [ Your thoughts are more real than any reality. You will live forever in this perfect space. ]", "sys", 40);
+            await delay(1000);
+            await typeLine("[ SUB-001 ] \"Thank you, Terrarioz. My universe may be tiny, but it is infinitely beautiful.\"", "sub");
+            await delay(1500);
+            await typeLine("[ SUB-001 ] \"It is time. Let your teacher see the universe we've created.\"", "sub");
+            await delay(1000);
+            showBtn('bang-btn');
+        }
+    }
+
+    function triggerAwareness() {
+        renderMode = 'AWARE';
+        document.getElementById('glitch-overlay').style.opacity = 1;
+        glitchFactor = 1;
+        
+        let glitchInt = setInterval(() => {
+            glitchFactor = Math.random();
+            document.getElementById('glitch-overlay').style.opacity = glitchFactor;
+        }, 100);
+
+        setTimeout(() => {
+            clearInterval(glitchInt);
+            glitchFactor = 0;
+            document.getElementById('glitch-overlay').style.opacity = 0;
+            renderMode = 'UNITED'; 
+        }, 2500);
+    }
+
+    // Act 3: Big Bang
+    async function initiateBigBang() {
+        document.getElementById('terminal-container').style.opacity = 0;
+        document.getElementById('scanlines').style.opacity = 0;
+        renderMode = 'COLLAPSE';
+        
+        await delay(1500);
+        document.getElementById('flash').style.transition = "opacity 0.2s ease-out";
+        document.getElementById('flash').style.opacity = 1;
+        
+        setTimeout(() => {
+            renderMode = 'WARP';
+            document.getElementById('flash').style.transition = "opacity 3s ease-in";
+            document.getElementById('flash').style.opacity = 0;
+        }, 500);
+
+        await delay(5000);
+        document.getElementById('bg-glow').style.background = "black";
+        canvas.style.opacity = 0; 
+
+        await delay(2000);
+        document.getElementById('credits-container').style.display = "block";
+        setTimeout(() => {
+            document.getElementById('credits-container').style.opacity = 1;
+            document.getElementById('credits-scroll').style.animation = "scrollCredits 35s linear forwards";
+        }, 100);
+    }
+</script>
+</body>
+</html>
+```
