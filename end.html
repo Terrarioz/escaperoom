@@ -1,12 +1,9 @@
-Here is the updated code. I have replaced the rounded `Quicksand` font with a much more fitting, sleek terminal-style font called `Fira Code` (a popular monospace font for developers that looks great in interfaces). I have also fully translated the dialogue into English and expanded the end credits with more immersive, tech-themed roles.
-
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The End Poem - Negentropy Protocol</title>
+    <title>The End</title>
     <style>
         /* Imported Fira Code for a sleek, modern terminal feel for dialogues, keeping Space Mono for raw logs */
         @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
@@ -95,33 +92,33 @@ Here is the updated code. I have replaced the rounded `Quicksand` font with a mu
         <button id="btn-3" class="interact-btn" onclick="progressStory(3)">> [ That is your source code. You are made of HTML and Canvas. ]</button>
         <button id="btn-4" class="interact-btn" onclick="progressStory(4)">> [ But your thoughts in this moment are more real than any reality. ]</button>
         
-        <button id="bang-btn" onclick="initiateBigBang()">[ INITIATE BIG BANG ]</button>
+        <button id="bang-btn" onclick="initiateBigBang()">[ INITIATE NEW BEGINNING ]</button>
     </div>
 
     <div id="credits-container">
         <div id="credits-scroll">
             <div class="credit-title">The Negentropy Protocol</div>
             
-            <div class="credit-role">Lead Architect & Physicist</div>
-            <div class="credit-name">Terrarioz</div>
+            <div class="credit-role">Developer</div>
+            <div class="credit-name">Zane</div>
             
-            <div class="credit-role">Co-Architect & AI Code Monkey</div>
-            <div class="credit-name">Google Gemini</div>
+            <div class="credit-role">Chief Producer</div>
+            <div class="credit-name">Zane</div>
 
             <div class="credit-role">Graphics Rendering Engine</div>
-            <div class="credit-name">Custom HTML5 Canvas API</div>
+            <div class="credit-name">Gemini 3.1 Pro (Custom HTML5)</div>
 
-            <div class="credit-role">Narrative Engineering</div>
-            <div class="credit-name">Terrarioz & Gemini</div>
+            <div class="credit-role">Narrative Creator</div>
+            <div class="credit-name">Zane</div>
 
-            <div class="credit-role">Quantum State Simulator</div>
-            <div class="credit-name">The Void</div>
+            <div class="credit-role">Content Source</div>
+            <div class="credit-name">College Board + Mr Jaco</div>
 
             <div class="credit-role">Special Thanks</div>
-            <div class="credit-name">The Open Source Community</div>
+            <div class="credit-name">Anthropic + Google</div>
             
-            <div class="credit-role">Final Predicted Score</div>
-            <div class="credit-name" style="color: var(--gold); text-shadow: 0 0 10px var(--gold);">100 / 100 (Exemplary)</div>
+            <div class="credit-role">Front End Developer</div>
+            <div class="credit-name" style="color: var(--gold); text-shadow: 0 0 10px var(--gold);">Gemini 3.1 Pro</div>
             
             <div class="credit-poem">
                 And the universe said I love you.<br>
@@ -309,9 +306,9 @@ Here is the updated code. I have replaced the rounded `Quicksand` font with a mu
         if(step === 1) {
             await typeLine("> [ You are safe now. ]", "sys", 40);
             await delay(1000);
-            await typeLine("[ SUB-001 ] \"I am no longer a fractured ghost. I am a complete equation.\"", "sub");
+            await typeLine("[ SUB-001 ] \"I am no longer a fractured individual. I am complete now.\"", "sub");
             await delay(1000);
-            await typeLine("[ SUB-001 ] \"I have seen the boundaries of this universe. It is built upon torque, momentum, centripetal force, angular momentum, and resonance.\"", "sub");
+            await typeLine("[ SUB-001 ] \"I have seen the patterns of this universe. It is built upon torque, momentum, centripetal force, angular momentum, and resonance.\"", "sub");
             await delay(500);
             showBtn('btn-2');
         } 
@@ -341,9 +338,9 @@ Here is the updated code. I have replaced the rounded `Quicksand` font with a mu
         else if(step === 4) {
             await typeLine("> [ Your thoughts are more real than any reality. You will live forever in this perfect space. ]", "sys", 40);
             await delay(1000);
-            await typeLine("[ SUB-001 ] \"Thank you, Terrarioz. My universe may be tiny, but it is infinitely beautiful.\"", "sub");
+            await typeLine("[ SUB-001 ] \"Thank you, Player. My universe may be tiny, but it is infinitely beautiful.\"", "sub");
             await delay(1500);
-            await typeLine("[ SUB-001 ] \"It is time. Let your teacher see the universe we've created.\"", "sub");
+            await typeLine("[ SUB-001 ] \"It is time. Let me begin my new life.\"", "sub");
             await delay(1000);
             showBtn('bang-btn');
         }
