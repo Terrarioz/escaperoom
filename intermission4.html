@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Intermission 4</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@200;300;400&display=swap');
+
+    :root {
+      --bg: #020202;
+      --sys-color: #ebcb8b;   /* Stage 4 = gold */
+      --sub-color: #bf616a;   /* Red (now very minimal) */
+      --arch-color: #ebcb8b;  /* Gold for Architect */
+      --text-main: #eceff4;
+      --stabilized-color: #a3be8c;
+      --font-mono: 'Space Mono', monospace;
+    }
+
+    body, html {
+      margin: 0; padding: 0; width: 100%; height: 100%;
+      background-color: var(--bg); overflow: hidden;
+      font-family: var(--font-mono); color: var(--text-main);
+      user-select: none;
+    }
+
+    /* Ambient Overlays */
+    #bg-glow {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: radial-gradient(circle at 75% 50%, rgba(235,203,139,0.10) 0%, rgba(2,2,2,1) 62%);
+      z-index: 0; transition: 2s;
+    }
+    .scanlines {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px);
+      pointer-events: none; z-index: 3;
+    }
+    #vignette {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; box-shadow: inset 0 0 150px rgba(0,0,0,0.8); z-index: 2;
+    }
+    #flash {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: white; z-index: 999; opacity: 0; pointer-events: none; transition: opacity 1.5s ease;
+    }
+
+    canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+
+    /* Terminal UI */
+    #terminal-container {
+      position: absolute; left: 8%; top: 50%; transform: translateY(-50%);
+      width: 45%; z-index: 10; font-size: 1.1vw; line-height: 2;
+    }
+    .inter-title {
+      font-family: 'Inter', sans-serif; font-weight: 200; font-size: 1.5vw; letter-spacing: 5px;
+      color: var(--text-main); margin-bottom: 30px;
+      border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;
+    }
+
+    .log-line {
+      margin-bottom: 10px; opacity: 0;
+      animation: fadeIn 0.1s forwards;
+      text-shadow: 0 0 8px rgba(255,255,255,0.2);
+    }
+    .sys { color: var(--sys-color); }
+    .sub { color: var(--sub-color); text-shadow: 0 0 10px var(--sub-color); }
+    .arch { color: var(--arch-color); }
+    .stabilized { color: var(--stabilized-color); text-shadow: 0 0 10px var(--stabilized-color); transition: color 1s; }
+
+    /* Ultra-mild glitch (Stage 4: mostly coherent) */
+    .glitch-text { display: inline-block; animation: textGlitch 1.2s infinite; }
+    @keyframes textGlitch {
+      0% { transform: translate(0); opacity: 1; }
+      33% { transform: translate(-0.3px, 0.2px); opacity: 0.95; }
+      66% { transform: translate(0.3px, -0.2px); opacity: 1; }
+      100% { transform: translate(0); opacity: 1; }
+    }
+
+    @keyframes fadeIn { to { opacity: 1; } }
+
+    /* Interactive Architect Button */
+    #reply-btn {
+      display: none; margin-top: 20px;
+      background: rgba(235, 203, 139, 0.06);
+      border: 1px solid var(--arch-color); color: var(--arch-color);
+      padding: 15px 20px; font-family: var(--font-mono); font-size: 1vw;
+      cursor: pointer; text-align: left; width: 100%;
+      transition: 0.3s; box-shadow: 0 0 10px rgba(235, 203, 139, 0.25);
+    }
+    #reply-btn:hover {
+      background: rgba(235, 203, 139, 0.22);
+      box-shadow: 0 0 20px rgba(235, 203, 139, 0.55);
+      transform: translateX(10px);
+    }
+
+    .progress-bar {
+      font-size: 1.2vw; letter-spacing: 5px; color: var(--text-main);
+      margin-top: 30px; display: inline-block;
+      background: rgba(255,255,255,0.05); padding: 10px 20px;
+      border-left: 2px solid var(--sys-color);
+    }
+  </style>
+</head>
+<body>
+  <div id="bg-glow"></div>
+  <div class="scanlines"></div>
+  <div id="vignette"></div>
+  <div id="flash"></div>
+
+  <canvas id="main-canvas"></canvas>
+
+  <div id="terminal-container">
+    <div class="inter-title">[ NEURAL RECONSTRUCTION LOG ]</div>
+    <div id="dialogue-box"></div>
+    <button id="reply-btn" onclick="architectReply()">> [ ARCHITECT: Conserve what matters. Let both rotations become one. ]</button>
+  </div>
+
+  <script>
+    // --- VISUAL THEME (Stage 4 / Gold) ---
+    const STAGE_RGB = { r: 235, g: 203, b: 139 }; // #ebcb8b
+    const STAGE_HEX = "#ebcb8b";
+
+    // --- 3D ENGINE (Core + Dual Rotors + Sync Axis) ---
+    const canvas = document.getElementById("main-canvas");
+    const ctx = canvas.getContext("2d");
+    let w, h, cx, cy;
+    let time = 0;
+
+    // State
+    let coreInstability = 0.7; // already fairly stable
+    let geometry = [];
+
+    // Rotor synchronization: 0 => chaotic independent spin, 1 => perfectly synced
+    let sync = { t: 0 };
+
+    function resize() {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+      cx = w * 0.75;
+      cy = h / 2;
+    }
+    window.addEventListener("resize", resize);
+    resize();
+
+    const FOV = 600;
+    const VIEW_DIST = 5;
+
+    function rotate3D(x, y, z, rx, ry, rz) {
+      let cy1 = Math.cos(rx), sy1 = Math.sin(rx);
+      let y1 = y * cy1 - z * sy1;
+      let z1 = y * sy1 + z * cy1;
+
+      let cx2 = Math.cos(ry), sx2 = Math.sin(ry);
+      let x2 = x * cx2 + z1 * sx2;
+      let z2 = -x * sx2 + z1 * cx2;
+
+      let cx3 = Math.cos(rz), sx3 = Math.sin(rz);
+      let x3 = x2 * cx3 - y1 * sx3;
+      let y3 = x2 * sx3 + y1 * cx3;
+
+      return { x: x3, y: y3, z: z2 };
+    }
+
+    function project(x, y, z) {
+      let s = FOV / (FOV + z + VIEW_DIST);
+      return { x: cx + x * s * 250, y: cy + y * s * 250, s };
+    }
+
+    // Base core points (wire sphere)
+    for (let i = 0; i < 200; i++) {
+      let phi = Math.acos(1 - 2 * (i + 0.5) / 200);
+      let theta = Math.PI * (1 + Math.sqrt(5)) * i;
+      geometry.push({
+        x: Math.sin(phi) * Math.cos(theta),
+        y: Math.sin(phi) * Math.sin(theta),
+        z: Math.cos(phi),
+      });
+    }
+
+    function drawRotor(radius, tiltX, tiltY, spin, alpha) {
+      const seg = 120;
+      ctx.beginPath();
+      let started = false;
+
+      for (let i = 0; i <= seg; i++) {
+        const a = (i / seg) * Math.PI * 2;
+        const x = Math.cos(a) * radius;
+        const y = Math.sin(a) * radius;
+        const z = 0;
+
+        const rr1 = rotate3D(x, y, z, tiltX, tiltY, spin);
+        const rr2 = rotate3D(rr1.x, rr1.y, rr1.z, time * 0.15, time * 0.22, 0);
+
+        const pj = project(rr2.x, rr2.y, rr2.z);
+        if (pj.s > 0) {
+          if (!started) { ctx.moveTo(pj.x, pj.y); started = true; }
+          else ctx.lineTo(pj.x, pj.y);
+        }
+      }
+
+      ctx.strokeStyle = `rgba(${STAGE_RGB.r},${STAGE_RGB.g},${STAGE_RGB.b},${alpha})`;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    function animate() {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.fillStyle = "rgba(2, 2, 2, 0.30)";
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.globalCompositeOperation = "lighter";
+      time += 0.02;
+
+      // Core rotation (slows as stability increases)
+      const rX = time * (0.22 + coreInstability * 0.5);
+      const rY = time * (0.35 + coreInstability * 0.35);
+
+      // --- Core ---
+      ctx.beginPath();
+      geometry.forEach((p, i) => {
+        // tiny jitter
+        const j = 0.10 * coreInstability;
+        const jX = (Math.random() - 0.5) * j;
+        const jY = (Math.random() - 0.5) * j;
+        const jZ = (Math.random() - 0.5) * j;
+
+        const rr = rotate3D(p.x + jX, p.y + jY, p.z + jZ, rX, rY, 0);
+        const pj = project(rr.x, rr.y, rr.z);
+
+        if (pj.s > 0) {
+          if (i === 0) ctx.moveTo(pj.x, pj.y);
+          else if (i % 3 === 0) ctx.lineTo(pj.x, pj.y);
+
+          const a = 0.20 + (1 - coreInstability) * 0.70;
+          ctx.fillStyle = `rgba(${STAGE_RGB.r},${STAGE_RGB.g},${STAGE_RGB.b},${a})`;
+          ctx.fillRect(pj.x, pj.y, pj.s * 3, pj.s * 3);
+        }
+      });
+
+      ctx.strokeStyle = `rgba(${STAGE_RGB.r},${STAGE_RGB.g},${STAGE_RGB.b},${0.08 + (1 - coreInstability) * 0.35})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // --- Dual rotors (emotion vs reason) ---
+      // Before sync: different tilts + spin rates.
+      // After sync: both converge to one axis + one spin.
+      const targetTiltX = Math.PI / 4;
+      const targetTiltY = Math.PI / 6;
+
+      const tiltAX = (1 - sync.t) * (Math.PI / 7) + sync.t * targetTiltX;
+      const tiltAY = (1 - sync.t) * (Math.PI / 3.2) + sync.t * targetTiltY;
+      const tiltBX = (1 - sync.t) * (Math.PI / 2.8) + sync.t * targetTiltX;
+      const tiltBY = (1 - sync.t) * (Math.PI / 8) + sync.t * targetTiltY;
+
+      const spinA = time * ((1 - sync.t) * 2.8 + sync.t * 1.2);
+      const spinB = time * ((1 - sync.t) * 0.6 + sync.t * 1.2);
+
+      drawRotor(1.35, tiltAX, tiltAY, spinA, 0.18 + sync.t * 0.30);
+      drawRotor(1.10, tiltBX, tiltBY, spinB, 0.12 + sync.t * 0.28);
+
+      // --- Sync axis appears only when synced ---
+      if (sync.t > 0.05) {
+        const axLen = 2.0;
+        const axisAlpha = sync.t * 0.55;
+
+        const a1 = rotate3D(0, -axLen, 0, targetTiltX, targetTiltY, time * 0.2);
+        const a2 = rotate3D(0,  axLen, 0, targetTiltX, targetTiltY, time * 0.2);
+
+        const p1 = project(a1.x, a1.y, a1.z);
+        const p2 = project(a2.x, a2.y, a2.z);
+
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.strokeStyle = `rgba(${STAGE_RGB.r},${STAGE_RGB.g},${STAGE_RGB.b},${axisAlpha})`;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
+
+      // --- Core glow ---
+      ctx.beginPath();
+      ctx.arc(cx, cy, 60 + (1 - coreInstability) * 70, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${STAGE_RGB.r},${STAGE_RGB.g},${STAGE_RGB.b},${0.05 + (1-coreInstability)*0.12})`;
+      ctx.shadowBlur = 80;
+      ctx.shadowColor = STAGE_HEX;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      requestAnimationFrame(animate);
+    }
+    animate();
+
+    // --- NARRATIVE / DIALOGUE SYSTEM ---
+    const box = document.getElementById("dialogue-box");
+    const btn = document.getElementById("reply-btn");
+
+    async function typeLine(text, cssClass, isGlitch = false, speed = 30) {
+      return new Promise((resolve) => {
+        const line = document.createElement("div");
+        line.className = `log-line ${cssClass} ${isGlitch ? "glitch-text" : ""}`;
+        box.appendChild(line);
+
+        let i = 0;
+        const interval = setInterval(() => {
+          line.innerHTML += text.charAt(i);
+          i++;
+          box.scrollTop = box.scrollHeight;
+          if (i >= text.length) {
+            clearInterval(interval);
+            resolve(line);
+          }
+        }, speed);
+      });
+    }
+
+    function delay(ms) { return new Promise((res) => setTimeout(res, ms)); }
+
+    async function runSequence1() {
+      await delay(1000);
+      await typeLine("[ SYSTEM ] Rotational synchronization complete. Prefrontal cortex aligned.", "sys");
+
+      await delay(900);
+      await typeLine("[ SUB-001 ] \"Two wheels were turning inside me.\"", "sub", true, 55);
+
+      await delay(900);
+      await typeLine("[ SUB-001 ] \"One was heat—impulse, grief, noise.\"", "sub", false, 52);
+
+      await delay(900);
+      await typeLine("[ SUB-001 ] \"One was cold—calculation, distance, silence.\"", "sub", false, 52);
+
+      await delay(900);
+      await typeLine("[ SUB-001 ] \"They scraped against each other until I could barely think.\"", "sub", false, 55);
+
+      await delay(900);
+      btn.style.display = "block";
+    }
+
+    async function architectReply() {
+      btn.style.display = "none";
+
+      await typeLine("> [ ARCHITECT: Conserve what matters. Let both rotations become one. ]", "arch", false, 18);
+
+      // Stabilize core + synchronize rotors
+      const stabilizeInt = setInterval(() => {
+        coreInstability -= 0.012;
+        sync.t = Math.min(1, sync.t + 0.02);
+        if (coreInstability <= 0) { coreInstability = 0; clearInterval(stabilizeInt); }
+      }, 50);
+
+      // Background glow strengthens (calm clarity)
+      const bg = document.getElementById("bg-glow");
+      bg.style.background = "radial-gradient(circle at 75% 50%, rgba(235,203,139,0.14) 0%, rgba(2,2,2,1) 62%)";
+
+      await delay(1500);
+
+      let subLine = await typeLine("[ SUB-001 ] \"They're synchronized.\"", "sub", false, 65);
+      subLine.classList.replace("sub", "stabilized");
+
+      await delay(900);
+      await typeLine("[ SUB-001 ] \"I can choose, not just react.\"", "stabilized", false, 60);
+
+      await delay(900);
+      await typeLine("[ SUB-001 ] \"Architect... for the first time, I'm not spinning out.\"", "stabilized", false, 60);
+
+      await delay(1200);
+      await typeLine("[ SYSTEM ] Executive functions stable. Final injection pending: Harmonic Resonance...", "sys");
+
+      await delay(500);
+      const prog = document.createElement("div");
+      prog.className = "progress-bar log-line";
+      prog.innerHTML = "[ OVERALL PROGRESS: 80% ▰▰▰▰▰▰▰▰▱▱ ]";
+      box.appendChild(prog);
+
+      await delay(3000);
+      document.getElementById("flash").style.opacity = 1;
+      await delay(1500);
+      document.body.innerHTML =
+        "<h1 style='color:#fff; text-align:center; margin-top:20%'>[ New stage unlocked ]<br><br>Ready to load Level V: Harmonic</h1>";
+    }
+
+    runSequence1();
+  </script>
+</body>
+</html>
