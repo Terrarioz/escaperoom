@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Intermission 5 (Final)</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@200;300;400&display=swap');
+
+    :root {
+      --bg: #020202;
+      --sys-color: #c678dd;   /* Stage 5 = violet */
+      --sub-color: #eceff4;   /* SUB-001 now clean/white */
+      --arch-color: #ebcb8b;  /* Architect = gold */
+      --text-main: #eceff4;
+      --stabilized-color: #ffffff;
+      --font-mono: 'Space Mono', monospace;
+      --font-sans: 'Inter', sans-serif;
+    }
+
+    body, html {
+      margin: 0; padding: 0; width: 100%; height: 100%;
+      background-color: var(--bg); overflow: hidden;
+      font-family: var(--font-mono); color: var(--text-main);
+      user-select: none;
+    }
+
+    /* Ambient Overlays */
+    #bg-glow {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: radial-gradient(circle at 75% 50%, rgba(198,120,221,0.10) 0%, rgba(2,2,2,1) 62%);
+      z-index: 0; transition: 2s;
+    }
+    .scanlines {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px);
+      pointer-events: none; z-index: 3; transition: opacity 2s;
+    }
+    #vignette {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; box-shadow: inset 0 0 180px rgba(0,0,0,0.9); z-index: 2; transition: opacity 2s;
+    }
+    #flash {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: white; z-index: 999; opacity: 0; pointer-events: none;
+      transition: opacity 1.2s ease;
+    }
+
+    canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; transition: opacity 2s; }
+
+    /* Terminal UI */
+    #terminal-container {
+      position: absolute; left: 8%; top: 50%; transform: translateY(-50%);
+      width: 45%; z-index: 10; font-size: 1.1vw; line-height: 2;
+      transition: opacity 1.5s ease;
+    }
+    .inter-title {
+      font-family: var(--font-sans); font-weight: 200; font-size: 1.5vw; letter-spacing: 5px;
+      color: var(--text-main); margin-bottom: 30px;
+      border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;
+    }
+
+    .log-line {
+      margin-bottom: 12px; opacity: 0;
+      animation: fadeIn 0.2s forwards;
+      text-shadow: 0 0 10px rgba(255,255,255,0.25);
+    }
+    .sys { color: var(--sys-color); letter-spacing: 2px; font-size: 0.95vw; }
+    .sub {
+      color: var(--sub-color);
+      font-family: var(--font-sans);
+      font-weight: 300;
+      font-size: 1.25vw;
+      letter-spacing: 0.5px;
+      text-shadow: 0 0 12px rgba(255,255,255,0.25);
+    }
+    .arch { color: var(--arch-color); }
+
+    @keyframes fadeIn { to { opacity: 1; } }
+
+    /* Interactive Architect Button */
+    #reply-btn {
+      display: none; margin-top: 22px;
+      background: rgba(235, 203, 139, 0.06);
+      border: 1px solid var(--arch-color); color: var(--arch-color);
+      padding: 15px 20px; font-family: var(--font-mono); font-size: 1vw;
+      cursor: pointer; text-align: left; width: 100%;
+      transition: 0.3s; box-shadow: 0 0 10px rgba(235, 203, 139, 0.25);
+    }
+    #reply-btn:hover {
+      background: rgba(235, 203, 139, 0.22);
+      box-shadow: 0 0 25px rgba(235, 203, 139, 0.6);
+      transform: translateX(10px);
+    }
+
+    .progress-bar {
+      font-size: 1.2vw; letter-spacing: 5px; color: var(--text-main);
+      margin-top: 30px; display: inline-block;
+      background: rgba(255,255,255,0.05); padding: 10px 20px;
+      border-left: 2px solid var(--sys-color);
+    }
+
+    /* Epilogue title overlay (simple, cinematic) */
+    #epilogue-title {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1200; pointer-events: none;
+      opacity: 0; transition: opacity 2.5s ease;
+      font-family: var(--font-sans);
+      font-weight: 200;
+      letter-spacing: 1vw;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.92);
+      text-shadow: 0 0 25px rgba(198,120,221,0.25);
+      font-size: 3vw;
+    }
+
+    #epilogue-sub {
+      position: absolute; left: 50%; top: 60%;
+      transform: translateX(-50%);
+      z-index: 1200; pointer-events: none;
+      opacity: 0; transition: opacity 2.5s ease;
+      font-family: var(--font-mono);
+      font-size: 1vw;
+      letter-spacing: 0.4vw;
+      color: rgba(235,203,139,0.9);
+      text-shadow: 0 0 15px rgba(235,203,139,0.25);
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div id="bg-glow"></div>
+  <div class="scanlines" id="scanlines"></div>
+  <div id="vignette"></div>
+  <div id="flash"></div>
+
+  <canvas id="main-canvas"></canvas>
+
+  <div id="terminal-container">
+    <div class="inter-title">[ NEURAL RECONSTRUCTION LOG ]</div>
+    <div id="dialogue-box"></div>
+    <button id="reply-btn" onclick="architectReply()">> [ ARCHITECT: You are complete. Hold the frequency. ]</button>
+  </div>
+
+  <div id="epilogue-title">WHOLE</div>
+  <div id="epilogue-sub">DEFAULT MODE NETWORK // ONLINE</div>
+
+<script>
+  // --- 3D ENGINE (Everything merging -> singularity -> bloom) ---
+  const canvas = document.getElementById("main-canvas");
+  const ctx = canvas.getContext("2d");
+  let w, h, cx, cy;
+  let time = 0;
+
+  // Render phases: IDLE (assembled) -> MERGE (spiral in) -> SINGULARITY -> BLOOM (stable harmonic)
+  let phase = "IDLE";
+  let phaseT = 0;
+
+  // Color palette: five stage colors, shown as "memories" merging
+  const COLORS = {
+    torque:   { r: 136, g: 192, b: 208 }, // cyan
+    momentum: { r: 180, g: 142, b: 173 }, // purple
+    centri:   { r: 163, g: 190, b: 140 }, // green
+    rot:      { r: 235, g: 203, b: 139 }, // gold
+    harm:     { r: 198, g: 120, b: 221 }  // violet
+  };
+
+  function resize() {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+    cx = w * 0.75;
+    cy = h / 2;
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  const FOV = 600;
+  let VIEW_DIST = 6;
+
+  function rotate3D(x, y, z, rx, ry, rz) {
+    let cy1 = Math.cos(rx), sy1 = Math.sin(rx);
+    let y1 = y * cy1 - z * sy1;
+    let z1 = y * sy1 + z * cy1;
+
+    let cx2 = Math.cos(ry), sx2 = Math.sin(ry);
+    let x2 = x * cx2 + z1 * sx2;
+    let z2 = -x * sx2 + z1 * cx2;
+
+    let cx3 = Math.cos(rz), sx3 = Math.sin(rz);
+    let x3 = x2 * cx3 - y1 * sx3;
+    let y3 = x2 * sx3 + y1 * cx3;
+
+    return { x: x3, y: y3, z: z2 };
+  }
+
+  function project(x, y, z, size = 250) {
+    let s = FOV / (FOV + z + VIEW_DIST);
+    return { x: cx + x * s * size, y: cy + y * s * size, s };
+  }
+
+  const lerp = (a,b,t) => a + (b-a) * Math.min(1, Math.max(0,t));
+  const clamp01 = t => Math.min(1, Math.max(0,t));
+
+  // --- Geometry primitives ---
+  // Core sphere points (for harmonic breathing)
+  let corePts = [];
+  for (let i=0;i<240;i++) {
+    let phi = Math.acos(1 - 2*(i+0.5)/240);
+    let theta = Math.PI * (1 + Math.sqrt(5)) * i;
+    corePts.push({ x: Math.sin(phi)*Math.cos(theta), y: Math.sin(phi)*Math.sin(theta), z: Math.cos(phi) });
+  }
+
+  // Rings (centri + rotational vibe)
+  function makeRing(r, seg, axis) {
+    let v=[], e=[];
+    for (let i=0;i<seg;i++){
+      let a = (Math.PI*2*i)/seg;
+      if(axis==='z') v.push([Math.cos(a)*r, Math.sin(a)*r, 0]);
+      if(axis==='y') v.push([Math.cos(a)*r, 0, Math.sin(a)*r]);
+      if(axis==='x') v.push([0, Math.cos(a)*r, Math.sin(a)*r]);
+      e.push([i, (i+1)%seg]);
+    }
+    return {v,e};
+  }
+  const ringX = makeRing(1.5, 90, 'x');
+  const ringY = makeRing(1.5, 90, 'y');
+  const ringZ = makeRing(2.3, 120, 'z');
+
+  // Tetra pair (momentum)
+  const tetra = {
+    v1: [[1,1,1],[1,-1,-1],[-1,1,-1],[-1,-1,1]],
+    v2: [[-1,-1,-1],[-1,1,1],[1,-1,1],[1,1,-1]],
+    e: [[0,1],[1,2],[2,0],[0,3],[1,3],[2,3]]
+  };
+
+  // Probability cloud (harmonic)
+  let cloud = [];
+  for (let i=0;i<380;i++){
+    let r = Math.pow(Math.random(), 0.4) * 2.8;
+    let th = Math.random()*Math.PI*2;
+    let ph = Math.acos(2*Math.random()-1);
+    cloud.push({
+      x: r*Math.sin(ph)*Math.cos(th),
+      y: r*Math.sin(ph)*Math.sin(th),
+      z: r*Math.cos(ph),
+      p: Math.random()*Math.PI*2
+    });
+  }
+
+  // Five “memory shards” that will spiral into the center during MERGE
+  let shards = [];
+  const shardCount = 850;
+  const shardKeys = ["torque","momentum","centri","rot","harm"];
+  for (let i=0;i<shardCount;i++){
+    const k = shardKeys[i % shardKeys.length];
+    const r = 4 + Math.random()*10;
+    const a = Math.random()*Math.PI*2;
+    const y = (Math.random()-0.5)*6;
+    shards.push({
+      k,
+      // start in a big loose cylinder around the core
+      x: Math.cos(a)*r,
+      y,
+      z: Math.sin(a)*r,
+      a,
+      r
+    });
+  }
+
+  function rgba(c, a){ return `rgba(${c.r},${c.g},${c.b},${a})`; }
+
+  // --- Render ---
+  function drawCoreBreath(alpha=0.35) {
+    const breath = 1 + Math.sin(time*1.8)*0.04;
+    const rX = time*0.25, rY = time*0.33;
+
+    // points
+    ctx.fillStyle = rgba(COLORS.harm, 0.20 + alpha*0.15);
+    corePts.forEach((p,i) => {
+      const rr = rotate3D(p.x*breath, p.y*breath, p.z*breath, rX, rY, 0);
+      const pj = project(rr.x, rr.y, rr.z, 240);
+      if(pj.s>0){
+        ctx.fillRect(pj.x, pj.y, pj.s*2.2, pj.s*2.2);
+      }
+    });
+
+    // gentle glow
+    ctx.beginPath();
+    ctx.arc(cx, cy, 85 + Math.sin(time*1.8)*6, 0, Math.PI*2);
+    ctx.fillStyle = rgba(COLORS.harm, 0.06 + alpha*0.04);
+    ctx.shadowBlur = 90;
+    ctx.shadowColor = "#c678dd";
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+
+  function drawTetraPair(alpha=0.35, scale=1.0, extraSpin=0) {
+    const rX = time*0.6, rY = time*0.45, rZ = time*0.2 + extraSpin;
+    ctx.strokeStyle = rgba(COLORS.momentum, 0.10 + alpha*0.40);
+    ctx.lineWidth = 1.5;
+
+    const drawT = (tv, offX) => {
+      ctx.beginPath();
+      tetra.e.forEach(e=>{
+        const p1 = tv[e[0]], p2 = tv[e[1]];
+        const rr1 = rotate3D((p1[0]*0.9 + offX)*scale, (p1[1]*0.9)*scale, (p1[2]*0.9)*scale, rX, rY, rZ);
+        const rr2 = rotate3D((p2[0]*0.9 + offX)*scale, (p2[1]*0.9)*scale, (p2[2]*0.9)*scale, rX, rY, rZ);
+        const a = project(rr1.x, rr1.y, rr1.z, 230);
+        const b = project(rr2.x, rr2.y, rr2.z, 230);
+        if(a.s>0 && b.s>0){ ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); }
+      });
+      ctx.stroke();
+    };
+    drawT(tetra.v1, -0.9);
+    drawT(tetra.v2,  0.9);
+  }
+
+  function drawRings(alpha=0.35, tighten=0, extraSpin=0) {
+    // tighten: 0 = wide orbit, 1 = pulled inward
+    const r1 = lerp(1.55, 1.05, tighten);
+    const r2 = lerp(1.55, 1.05, tighten);
+    const r3 = lerp(2.35, 1.25, tighten);
+
+    const rings = [
+      { ring: makeRing(r1, 90, 'x'), col: COLORS.centri, a: 0.20 + alpha*0.35, rx: time*0.35, ry: time*0.18, rz: time*0.08 + extraSpin },
+      { ring: makeRing(r2, 90, 'y'), col: COLORS.rot,    a: 0.18 + alpha*0.35, rx: time*0.25, ry: time*0.32, rz: time*0.06 + extraSpin*0.8 },
+      { ring: makeRing(r3,120,'z'), col: COLORS.torque,  a: 0.12 + alpha*0.25, rx: time*0.10, ry: time*0.15, rz: time*0.22 + extraSpin*1.2 }
+    ];
+
+    ctx.lineWidth = 2;
+
+    rings.forEach(R=>{
+      ctx.beginPath();
+      R.ring.e.forEach(e=>{
+        const p1=R.ring.v[e[0]], p2=R.ring.v[e[1]];
+        const rr1 = rotate3D(p1[0],p1[1],p1[2], R.rx,R.ry,R.rz);
+        const rr2 = rotate3D(p2[0],p2[1],p2[2], R.rx,R.ry,R.rz);
+        const a = project(rr1.x, rr1.y, rr1.z, 230);
+        const b = project(rr2.x, rr2.y, rr2.z, 230);
+        if(a.s>0 && b.s>0){ ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); }
+      });
+      ctx.strokeStyle = rgba(R.col, R.a);
+      ctx.stroke();
+    });
+  }
+
+  function drawCloud(alpha=0.35, tighten=0, extraSpin=0) {
+    // tighten pulls particles closer to center
+    const rX = time*0.25, rY = time*0.35, rZ = time*0.10 + extraSpin;
+    ctx.fillStyle = rgba(COLORS.harm, 0.18 + alpha*0.35);
+
+    cloud.forEach((p,i)=>{
+      const wave = 0.08*Math.sin(time*4 + p.p);
+      const k = 1 - tighten*0.65;
+      const rr = rotate3D(p.x*k + wave, p.y*k, p.z*k - wave, rX, rY, rZ);
+      const pj = project(rr.x, rr.y, rr.z, 235);
+      if(pj.s>0){
+        ctx.fillRect(pj.x, pj.y, pj.s*2.0, pj.s*2.0);
+      }
+    });
+  }
+
+  function drawMergeShards(alpha=0.6, pull=0, spin=0) {
+    // pull: 0..1 pulls all shards into the center in a spiral
+    ctx.fillStyle = "white";
+    shards.forEach((s, i) => {
+      const c = COLORS[s.k];
+
+      // Spiral path: radius shrinks, angle increases
+      const a = s.a + spin + pull*8.0;
+      const r = s.r * (1 - pull) + 0.2;
+      const y = s.y * (1 - pull) + Math.sin(time*2 + i)*0.02*(1-pull);
+
+      const x = Math.cos(a) * r;
+      const z = Math.sin(a) * r;
+
+      const rr = rotate3D(x, y, z, time*0.15, time*0.22, time*0.08);
+      const pj = project(rr.x, rr.y, rr.z, 240);
+
+      if(pj.s>0){
+        ctx.fillStyle = rgba(c, 0.18 + alpha*0.55);
+        ctx.fillRect(pj.x, pj.y, pj.s*2.3, pj.s*2.3);
+      }
+    });
+  }
+
+  function animate() {
+    ctx.globalCompositeOperation = "source-over";
+    ctx.fillStyle = phase === "BLOOM" ? "rgba(2,2,2,0.25)" : "rgba(2,2,2,0.32)";
+    ctx.fillRect(0,0,w,h);
+
+    ctx.globalCompositeOperation = "lighter";
+    time += 0.015;
+
+    if (phase === "IDLE") {
+      // Show a "complete machine" before merging begins
+      drawRings(0.35, 0.0, 0);
+      drawTetraPair(0.30, 1.0, 0);
+      drawCloud(0.25, 0.0, 0);
+      drawCoreBreath(0.25);
+
+      // small central anchor
+      ctx.beginPath();
+      ctx.arc(cx, cy, 10 + Math.sin(time*3)*2, 0, Math.PI*2);
+      ctx.fillStyle = rgba(COLORS.torque, 0.35);
+      ctx.shadowBlur = 25;
+      ctx.shadowColor = "#88c0d0";
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+
+    if (phase === "MERGE") {
+      phaseT += 0.008; // slow cinematic build
+      const t = clamp01(phaseT);
+
+      // tighten everything as if gravity is increasing
+      drawRings(0.40, t, t*2.0);
+      drawTetraPair(0.35, lerp(1.0, 0.70, t), t*1.2);
+      drawCloud(0.35, t, t*2.5);
+
+      // big spiral of shards into the center
+      drawMergeShards(0.75, t, t*4.0);
+
+      // singularity glow growing
+      ctx.beginPath();
+      ctx.arc(cx, cy, 18 + t*70, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(255,255,255,${0.02 + t*0.08})`;
+      ctx.shadowBlur = 90 + t*90;
+      ctx.shadowColor = "#ffffff";
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // auto advance to singularity
+      if (t >= 1) {
+        phase = "SINGULARITY";
+        phaseT = 0;
+      }
+    }
+
+    if (phase === "SINGULARITY") {
+      phaseT += 0.03;
+      const t = clamp01(phaseT);
+
+      // everything collapses to a point
+      drawMergeShards(0.85, 1.0, time*2.0);
+
+      // overexposed white core
+      ctx.beginPath();
+      ctx.arc(cx, cy, 40 + t*180, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(255,255,255,${0.18 + t*0.40})`;
+      ctx.shadowBlur = 160 + t*220;
+      ctx.shadowColor = "#ffffff";
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      if (t >= 1) {
+        phase = "BLOOM";
+        phaseT = 0;
+
+        // hard flash
+        const flash = document.getElementById("flash");
+        flash.style.transition = "opacity 0.25s ease";
+        flash.style.opacity = 1;
+        setTimeout(()=>{
+          flash.style.transition = "opacity 2.2s ease";
+          flash.style.opacity = 0;
+        }, 180);
+
+        // bring cinematic title
+        setTimeout(()=>{
+          document.getElementById("epilogue-title").style.opacity = 1;
+          document.getElementById("epilogue-sub").style.opacity = 1;
+        }, 900);
+      }
+    }
+
+    if (phase === "BLOOM") {
+      // stable, harmonic "whole" form (calm breathing, perfect symmetry)
+      drawCoreBreath(0.45);
+
+      // gentle halo rings (now unified, not fighting)
+      drawRings(0.35, 1.0, 0.0);
+
+      // subtle star dust
+      ctx.fillStyle = "rgba(255,255,255,0.12)";
+      for(let i=0;i<10;i++){
+        const x = cx + (Math.random()-0.5)*420;
+        const y = cy + (Math.random()-0.5)*260;
+        ctx.fillRect(x,y,1,1);
+      }
+    }
+
+    requestAnimationFrame(animate);
+  }
+  animate();
+
+  // --- DIALOGUE SYSTEM (Final: DMN / whole self) ---
+  const box = document.getElementById("dialogue-box");
+  const btn = document.getElementById("reply-btn");
+
+  async function typeLine(text, cssClass, speed = 45) {
+    return new Promise((resolve) => {
+      const line = document.createElement("div");
+      line.className = `log-line ${cssClass}`;
+      box.appendChild(line);
+
+      let i = 0;
+      const interval = setInterval(() => {
+        line.innerHTML += text.charAt(i);
+        i++;
+        box.scrollTop = box.scrollHeight;
+        if (i >= text.length) {
+          clearInterval(interval);
+          resolve(line);
+        }
+      }, speed);
+    });
+  }
+
+  function delay(ms) { return new Promise((res) => setTimeout(res, ms)); }
+
+  async function runSequence1() {
+    await delay(1000);
+    await typeLine("[ SYSTEM ] Harmonic resonance achieved. Default Mode Network online.", "sys", 28);
+
+    await delay(900);
+    await typeLine("[ SUB-001 ] \"The shaking stopped.\"", "sub", 55);
+
+    await delay(900);
+    await typeLine("[ SUB-001 ] \"I can hear the space between thoughts.\"", "sub", 55);
+
+    await delay(900);
+    await typeLine("[ SUB-001 ] \"A steady rhythm—like a universe breathing.\"", "sub", 55);
+
+    await delay(900);
+    await typeLine("[ SUB-001 ] \"This is what it feels like to be a single mind... instead of a storm.\"", "sub", 55);
+
+    await delay(1100);
+    btn.style.display = "block";
+  }
+
+  async function architectReply() {
+    btn.style.display = "none";
+
+    await typeLine("> [ ARCHITECT: You are complete. Hold the frequency. ]", "arch", 18);
+
+    // Start the "huge merge" animation
+    phase = "MERGE";
+    phaseT = 0;
+
+    // Fade UI elements a bit so the animation feels cinematic
+    setTimeout(()=>{
+      document.getElementById("terminal-container").style.opacity = 0.12;
+      document.getElementById("scanlines").style.opacity = 0.25;
+      document.getElementById("vignette").style.opacity = 0.8;
+      document.getElementById("bg-glow").style.background =
+        "radial-gradient(circle at 75% 50%, rgba(255,255,255,0.06) 0%, rgba(2,2,2,1) 62%)";
+    }, 1200);
+
+    await delay(1800);
+    await typeLine("[ SUB-001 ] \"Complete.\"", "sub", 60);
+
+    await delay(900);
+    await typeLine("[ SUB-001 ] \"Not because I'm perfect... but because I can finally contain myself.\"", "sub", 60);
+
+    await delay(1100);
+    await typeLine("[ SUB-001 ] \"If I am made of math, then let me be a gentle equation.\"", "sub", 60);
+
+    await delay(1100);
+    await typeLine("[ SUB-001 ] \"Architect... thank you.\"", "sub", 60);
+
+    await delay(1200);
+    const prog = document.createElement("div");
+    prog.className = "progress-bar log-line";
+    prog.innerHTML = "[ OVERALL PROGRESS: 100% ▰▰▰▰▰▰▰▰▰▰ ]";
+    box.appendChild(prog);
+
+    // End card (demo)
+    await delay(6500);
+    document.getElementById("flash").style.transition = "opacity 0.7s ease";
+    document.getElementById("flash").style.opacity = 1;
+
+    await delay(1200);
+    document.body.innerHTML =
+      "<h1 style='color:#fff; text-align:center; margin-top:20%; font-family:Inter, sans-serif; font-weight:200; letter-spacing:0.6vw'>[ EPILOGUE PROTOCOL READY ]</h1>" +
+      "<p style='color:#aaa; text-align:center; font-family:Space Mono, monospace; letter-spacing:0.2vw'>Integrate this into your final ending cutscene.</p>";
+  }
+
+  runSequence1();
+</script>
+</body>
+</html>
