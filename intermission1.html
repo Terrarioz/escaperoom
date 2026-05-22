@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Intermission 1 - The Negentropy Protocol</title>
+    <title>Intermission 1</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@200;300;400&display=swap');
 
@@ -87,7 +87,7 @@
     <div id="terminal-container">
         <div class="inter-title">[ NEURAL RECONSTRUCTION LOG ]</div>
         <div id="dialogue-box"></div>
-        <button id="reply-btn" onclick="architectReply()">> [ ARCHITECT: Stabilize your frequency. You are being uploaded. ]</button>
+        <button id="reply-btn" onclick="architectReply()">> [ ARCHITECT: Stabilize yourself. You are being uploaded. ]</button>
     </div>
 
 <script>
@@ -190,9 +190,9 @@
         await delay(1000);
         await typeLine("[ SYSTEM ] Torque Override Successful. Motor Cortex brought online.", "sys");
         await delay(800);
-        await typeLine("[ SUB-001 ] \"...c-cold... where am I? My hands... I can't feel my hands!\"", "sub", true, 40);
+        await typeLine("[ SUB-001 ] \"...c-cold... where am I? My hands... I can't feel myself!\"", "sub", true, 40);
         await delay(1000);
-        await typeLine("[ SUB-001 ] \"The world is dissolving... gravity is tearing me apart!\"", "sub", true, 50);
+        await typeLine("[ SUB-001 ] \"The world is dissolving... it's tearing me apart!\"", "sub", true, 50);
         await delay(1000);
         btn.style.display = "block"; // Show player choice
     }
@@ -229,7 +229,7 @@
         await delay(3000);
         document.getElementById('flash').style.opacity = 1;
         await delay(1500);
-        document.body.innerHTML = "<h1 style='color:#fff; text-align:center; margin-top:20%'>[ END OF DEMO ]<br><br>Ready to load Level II: Momentum</h1>";
+        document.body.innerHTML = "<h1 style='color:#fff; text-align:center; margin-top:20%'>[ New stage unlocked ]<br><br>Ready to load Level II: Momentum</h1>";
     }
 
     // Start the show
