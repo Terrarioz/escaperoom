@@ -564,18 +564,6 @@
         "radial-gradient(circle at 75% 50%, rgba(255,255,255,0.06) 0%, rgba(2,2,2,1) 62%)";
     }, 1200);
 
-    await delay(1800);
-    await typeLine("[ SUB-001 ] \"Complete.\"", "sub", 60);
-
-    await delay(900);
-    await typeLine("[ SUB-001 ] \"Not because I'm perfect... but because I can finally contain myself.\"", "sub", 60);
-
-    await delay(1100);
-    await typeLine("[ SUB-001 ] \"If I am made of math, then let me be a gentle equation.\"", "sub", 60);
-
-    await delay(1100);
-    await typeLine("[ SUB-001 ] \"Architect... thank you.\"", "sub", 60);
-
     await delay(1200);
     const prog = document.createElement("div");
     prog.className = "progress-bar log-line";
@@ -586,11 +574,7 @@
     await delay(6500);
     document.getElementById("flash").style.transition = "opacity 0.7s ease";
     document.getElementById("flash").style.opacity = 1;
-
     await delay(1200);
-    document.body.innerHTML =
-      "<h1 style='color:#fff; text-align:center; margin-top:20%; font-family:Inter, sans-serif; font-weight:200; letter-spacing:0.6vw'>[ EPILOGUE PROTOCOL READY ]</h1>" +
-      "<p style='color:#aaa; text-align:center; font-family:Space Mono, monospace; letter-spacing:0.2vw'>Integrate this into your final ending cutscene.</p>";
     setTimeout(() => {
       window.location.href = 'end.html';
     }, 3000);
