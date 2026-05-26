@@ -22,6 +22,7 @@
       background-color: var(--bg); overflow: hidden;
       font-family: var(--font-mono); color: var(--text-main);
       user-select: none;
+      opacity: 0; transition: opacity 1.5s ease;
     }
 
     /* Ambient Overlays */
@@ -119,6 +120,11 @@
   </div>
 
 <script>
+  window.addEventListener('load', () => {
+    document.documentElement.style.opacity = '1';
+    document.body.style.opacity = '1';
+  });
+
   // --- VISUAL THEME (Stage 3 / Green) ---
   const STAGE_RGB = { r: 163, g: 190, b: 140 }; // #a3be8c
   const STAGE_HEX = '#a3be8c';
@@ -339,6 +345,9 @@
     await delay(1500);
     document.body.innerHTML =
       "<h1 style='color:#fff; text-align:center; margin-top:20%'>[ New stage unlocked ]<br><br>Ready to load Level IV: Rotational</h1>";
+    setTimeout(() => {
+      window.location.href = 'stage4.html';
+    }, 2500);
   }
 
   // Start

@@ -23,6 +23,7 @@
             background-color: var(--bg); overflow: hidden;
             font-family: var(--font-mono); color: var(--text-main);
             user-select: none;
+            opacity: 0; transition: opacity 1.5s ease;
         }
 
         #bg-glow {
@@ -188,6 +189,11 @@
     </div>
 
 <script>
+    window.addEventListener('load', () => {
+        document.documentElement.style.opacity = '1';
+        document.body.style.opacity = '1';
+    });
+
     // Math: I_A = 0.5*M*R^2, I_B = M*R^2.
     // L_i = I_A * 30 + 0 = 15 M R^2
     // L_f = (I_A + I_B) * w_f = 1.5 M R^2 * w_f
@@ -367,6 +373,9 @@
             btn.style.color = "var(--bg)";
             btn.style.background = "var(--accent)";
             btn.style.boxShadow = "0 0 30px rgba(235, 203, 139, 0.8)";
+            setTimeout(() => {
+                window.location.href = 'intermission4.html';
+            }, 2500);
         } else {
             life--;
             input.value = "";

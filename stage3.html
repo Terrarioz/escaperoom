@@ -23,6 +23,7 @@
             background-color: var(--bg); overflow: hidden;
             font-family: var(--font-mono); color: var(--text-main);
             user-select: none;
+            opacity: 0; transition: opacity 1.5s ease;
         }
 
         #bg-glow {
@@ -188,6 +189,11 @@
     </div>
 
 <script>
+    window.addEventListener('load', () => {
+        document.documentElement.style.opacity = '1';
+        document.body.style.opacity = '1';
+    });
+
     // Physics: H = 2.5 * R. R = 40.0. H = 100.
     const CORRECT_ANSWER = "100";
     const nodeData = [
@@ -340,6 +346,9 @@
             btn.style.color = "var(--bg)";
             btn.style.background = "var(--accent)";
             btn.style.boxShadow = "0 0 30px rgba(163, 190, 140, 0.8)";
+            setTimeout(() => {
+                window.location.href = 'intermission3.html';
+            }, 2500);
         } else {
             life--;
             input.value = "";

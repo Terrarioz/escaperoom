@@ -18,6 +18,7 @@
             margin: 0; padding: 0; width: 100%; height: 100%;
             background-color: var(--bg); overflow: hidden;
             font-family: 'Space Mono', monospace; color: var(--text-main);
+            opacity: 0; transition: opacity 1.5s ease;
         }
 
         #canvas-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
@@ -87,6 +88,11 @@
     <button id="start-btn" onclick="startCinematic()">[ ▶ INITIATE ]</button>
 
 <script>
+    window.addEventListener('load', () => {
+        document.documentElement.style.opacity = '1';
+        document.body.style.opacity = '1';
+    });
+
     const canvas = document.getElementById('canvas-layer');
     const ctx = canvas.getContext('2d', { alpha: false }); 
     let w, h, cx, cy;
@@ -251,7 +257,12 @@
             let lIdx = 0;
             let typeInterval = setInterval(() => {
                 if(lIdx < lines.length) { elBoot.innerHTML += lines[lIdx] + '<br>'; lIdx++; }
-                else clearInterval(typeInterval);
+                else {
+                    clearInterval(typeInterval);
+                    setTimeout(() => {
+                        window.location.href = 'stage1.html';
+                    }, 2500);
+                }
             }, 600);
         }, 30500);
 

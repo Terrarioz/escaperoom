@@ -22,6 +22,7 @@
       background-color: var(--bg); overflow: hidden;
       font-family: var(--font-mono); color: var(--text-main);
       user-select: none;
+      opacity: 0; transition: opacity 1.5s ease;
     }
 
     /* Ambient Overlays */
@@ -116,6 +117,11 @@
   </div>
 
   <script>
+    window.addEventListener('load', () => {
+      document.documentElement.style.opacity = '1';
+      document.body.style.opacity = '1';
+    });
+
     // --- VISUAL THEME (Stage 4 / Gold) ---
     const STAGE_RGB = { r: 235, g: 203, b: 139 }; // #ebcb8b
     const STAGE_HEX = "#ebcb8b";
@@ -376,6 +382,9 @@
       await delay(1500);
       document.body.innerHTML =
         "<h1 style='color:#fff; text-align:center; margin-top:20%'>[ New stage unlocked ]<br><br>Ready to load Level V: Harmonic</h1>";
+      setTimeout(() => {
+        window.location.href = 'stage5.html';
+      }, 2500);
     }
 
     runSequence1();

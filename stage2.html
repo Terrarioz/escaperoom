@@ -23,6 +23,7 @@
             background-color: var(--bg); overflow: hidden;
             font-family: var(--font-mono); color: var(--text-main);
             user-select: none;
+            opacity: 0; transition: opacity 1.5s ease;
         }
 
         #bg-glow {
@@ -189,6 +190,11 @@
     </div>
 
 <script>
+    window.addEventListener('load', () => {
+        document.documentElement.style.opacity = '1';
+        document.body.style.opacity = '1';
+    });
+
     // Physics Logic: m*v0 + 4m*0 = 5m*vf -> vf = 0.2*v0. 
     // Initial KE = 0.5*m*v0^2. Final KE = 0.5*(5m)*(0.2v0)^2 = 0.2*(0.5*m*v0^2).
     // Lost = 80%.
@@ -333,6 +339,9 @@
             btn.style.color = "var(--bg)";
             btn.style.background = "var(--accent)";
             btn.style.boxShadow = "0 0 30px rgba(180, 142, 173, 0.8)";
+            setTimeout(() => {
+                window.location.href = 'intermission2.html';
+            }, 2500);
         } else {
             life--;
             input.value = "";
