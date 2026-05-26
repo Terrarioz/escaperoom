@@ -23,6 +23,7 @@
       background-color: var(--bg); overflow: hidden;
       font-family: var(--font-mono); color: var(--text-main);
       user-select: none;
+      opacity: 0; transition: opacity 1.5s ease;
     }
 
     /* Ambient Overlays */
@@ -147,6 +148,11 @@
   <div id="epilogue-sub">DEFAULT MODE NETWORK // ONLINE</div>
 
 <script>
+  window.addEventListener('load', () => {
+    document.documentElement.style.opacity = '1';
+    document.body.style.opacity = '1';
+  });
+
   // --- 3D ENGINE (Everything merging -> singularity -> bloom) ---
   const canvas = document.getElementById("main-canvas");
   const ctx = canvas.getContext("2d");
@@ -585,6 +591,9 @@
     document.body.innerHTML =
       "<h1 style='color:#fff; text-align:center; margin-top:20%; font-family:Inter, sans-serif; font-weight:200; letter-spacing:0.6vw'>[ EPILOGUE PROTOCOL READY ]</h1>" +
       "<p style='color:#aaa; text-align:center; font-family:Space Mono, monospace; letter-spacing:0.2vw'>Integrate this into your final ending cutscene.</p>";
+    setTimeout(() => {
+      window.location.href = 'end.html';
+    }, 3000);
   }
 
   runSequence1();

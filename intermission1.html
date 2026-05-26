@@ -21,6 +21,7 @@
             background-color: var(--bg); overflow: hidden;
             font-family: var(--font-mono); color: var(--text-main);
             user-select: none;
+            opacity: 0; transition: opacity 1.5s ease;
         }
 
         /* Ambient Overlays */
@@ -91,6 +92,11 @@
     </div>
 
 <script>
+    window.addEventListener('load', () => {
+        document.documentElement.style.opacity = '1';
+        document.body.style.opacity = '1';
+    });
+
     // --- 3D ENGINE (Render the "Core") ---
     const canvas = document.getElementById('main-canvas');
     const ctx = canvas.getContext('2d');
@@ -230,6 +236,9 @@
         document.getElementById('flash').style.opacity = 1;
         await delay(1500);
         document.body.innerHTML = "<h1 style='color:#fff; text-align:center; margin-top:20%'>[ New stage unlocked ]<br><br>Ready to load Level II: Momentum</h1>";
+        setTimeout(() => {
+            window.location.href = 'stage2.html';
+        }, 2500);
     }
 
     // Start the show

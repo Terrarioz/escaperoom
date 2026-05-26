@@ -22,6 +22,7 @@
             background-color: var(--bg); overflow: hidden;
             font-family: var(--font-mono); color: var(--text-main);
             user-select: none;
+            opacity: 0; transition: opacity 1.5s ease;
         }
 
         #bg-glow {
@@ -189,6 +190,11 @@
     </div>
 
 <script>
+    window.addEventListener('load', () => {
+        document.documentElement.style.opacity = '1';
+        document.body.style.opacity = '1';
+    });
+
     const CORRECT_ANSWER = "1000";
     const nodeData = [
         "Len:10m | Den:4.0kg/m",
@@ -357,6 +363,9 @@
             btn.style.color = "var(--bg)";
             btn.style.background = "var(--accent)";
             btn.style.boxShadow = "0 0 30px rgba(136, 192, 208, 0.8)";
+            setTimeout(() => {
+                window.location.href = 'intermission1.html';
+            }, 2500);
         } else {
             // FAIL LOGIC
             life--;
