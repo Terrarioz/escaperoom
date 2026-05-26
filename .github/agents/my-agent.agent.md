@@ -4,7 +4,7 @@
 # To make this agent available, merge this file into the default repository branch.
 # For format details, see: https://gh.io/customagents/config
 
-name: Gerbert Pro Max
+name:Gerbert Pro Max
 description:Zanes personal pookie
 ---
 
