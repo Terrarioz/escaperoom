@@ -83,6 +83,43 @@
         button.ready { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 10px rgba(198, 120, 221, 0.2); }
         button.ready:hover { background: rgba(198, 120, 221, 0.15); box-shadow: 0 0 20px rgba(198, 120, 221, 0.4); }
 
+        .stage-intro {
+            position: absolute; top: 12%; left: 50%; transform: translate(-50%, -10px);
+            font-family: var(--font-sans); font-weight: 300; letter-spacing: 6px;
+            font-size: 1rem; text-transform: uppercase; color: var(--text-main);
+            opacity: 0; transition: opacity 0.8s ease, transform 0.8s ease; z-index: 50;
+            pointer-events: none; text-shadow: 0 0 12px rgba(255,255,255,0.15);
+        }
+        .stage-intro.show { opacity: 1; transform: translate(-50%, 0); }
+        .stage-intro.hide { opacity: 0; transform: translate(-50%, 10px); }
+
+        .viz-trigger {
+            margin-top: 12px; width: auto; padding: 8px 14px; font-size: 0.65rem;
+            letter-spacing: 1.5px; display: inline-block;
+        }
+        .viz-modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease; z-index: 200;
+        }
+        .viz-modal.active { opacity: 1; pointer-events: auto; }
+        .viz-window {
+            background: rgba(3,3,3,0.95); border: 1px solid var(--accent);
+            padding: 20px; width: min(560px, 85vw); box-shadow: 0 0 30px rgba(0,0,0,0.6);
+        }
+        .viz-title {
+            font-family: var(--font-sans); font-weight: 300; letter-spacing: 3px;
+            font-size: 0.9rem; text-transform: uppercase; color: var(--accent); margin-bottom: 12px;
+        }
+        .viz-diagram {
+            height: 220px; border: 1px dashed rgba(255,255,255,0.15);
+            display: flex; align-items: center; justify-content: center; margin-bottom: 12px;
+        }
+        .viz-caption {
+            font-size: 0.75rem; color: var(--text-dim); line-height: 1.6; margin-bottom: 14px;
+        }
+        .viz-close { width: auto; padding: 8px 16px; font-size: 0.65rem; letter-spacing: 1.5px; }
+
         #reticle { 
             position: absolute; pointer-events: none; transition: 0.05s ease-out; opacity: 0; 
             width: 50px; height: 50px; transform: translate(-50%, -50%); z-index: 5;
@@ -136,6 +173,7 @@
     <canvas id="canvas-layer"></canvas>
     
     <div id="reticle"></div>
+    <div id="stage-intro" class="stage-intro">Stage 5 : Harmonic</div>
 
     <div id="death-screen">
         <h1>CRITICAL FAILURE</h1>
@@ -166,6 +204,7 @@
                 > TARGET: Calculate the absolute maximum velocity (v_max) of the oscillator.<br>
                 > CONCEPT: Simple Harmonic Motion (SHM) kinematics.
             </div>
+            <button class="viz-trigger" id="viz-btn">VISUALIZE SCENARIO</button>
         </div>
 
         <div id="ui-bot-right" class="hud-corner">
@@ -188,11 +227,55 @@
 
     </div>
 
+    <div id="viz-modal" class="viz-modal">
+        <div class="viz-window">
+            <div class="viz-title">Mass-Spring Oscillator</div>
+            <div class="viz-diagram">
+                <svg viewBox="0 0 400 200" width="100%" height="100%" aria-hidden="true">
+                    <style>
+                        .spring { stroke: var(--accent); stroke-width: 3; fill: none; }
+                        .block { fill: none; stroke: var(--accent); stroke-width: 3; }
+                        .label { fill: var(--text-main); font-size: 12px; font-family: var(--font-sans); }
+                        .muted { fill: var(--text-dim); font-size: 11px; font-family: var(--font-sans); }
+                    </style>
+                    <line x1="40" y1="100" x2="70" y2="100" stroke="var(--accent)" stroke-width="3"/>
+                    <polyline class="spring" points="70,100 85,80 100,120 115,80 130,120 145,80 160,120 175,100"/>
+                    <rect class="block" x="175" y="80" width="50" height="40"/>
+                    <line x1="250" y1="60" x2="250" y2="140" stroke="var(--accent)" stroke-width="2" stroke-dasharray="4 4"/>
+                    <line x1="230" y1="60" x2="230" y2="140" stroke="var(--accent)" stroke-width="2"/>
+                    <line x1="230" y1="60" x2="240" y2="70" stroke="var(--accent)" stroke-width="2"/>
+                    <line x1="230" y1="140" x2="240" y2="130" stroke="var(--accent)" stroke-width="2"/>
+                    <text class="label" x="238" y="55">A</text>
+                    <text class="label" x="182" y="72">m</text>
+                    <text class="muted" x="245" y="170">v_max at equilibrium</text>
+                </svg>
+            </div>
+            <div class="viz-caption">Use k, m, and amplitude to compute the peak speed.</div>
+            <button class="viz-close" id="viz-close">CLOSE</button>
+        </div>
+    </div>
+
 <script>
     window.addEventListener('load', () => {
         document.documentElement.style.opacity = '1';
         document.body.style.opacity = '1';
+        const stageIntro = document.getElementById('stage-intro');
+        if (stageIntro) {
+            requestAnimationFrame(() => stageIntro.classList.add('show'));
+            setTimeout(() => stageIntro.classList.add('hide'), 1800);
+        }
     });
+
+    const vizBtn = document.getElementById('viz-btn');
+    const vizModal = document.getElementById('viz-modal');
+    const vizClose = document.getElementById('viz-close');
+    if (vizBtn && vizModal && vizClose) {
+        vizBtn.addEventListener('click', () => vizModal.classList.add('active'));
+        vizClose.addEventListener('click', () => vizModal.classList.remove('active'));
+        vizModal.addEventListener('click', (event) => {
+            if (event.target === vizModal) vizModal.classList.remove('active');
+        });
+    }
 
     const CORRECT_ANSWER = "5";
     const nodeData = [
@@ -358,7 +441,7 @@
             btn.style.boxShadow = "0 0 30px rgba(198, 120, 221, 0.8)";
             setTimeout(() => {
                 window.location.href = 'intermission5.html';
-            }, 2500);
+            }, 4500);
         } else {
             life--;
             input.value = "";
