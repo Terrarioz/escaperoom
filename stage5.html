@@ -52,18 +52,61 @@
         .hex { transition: 0.3s; color: var(--text-main); text-shadow: 0 0 8px rgba(255,255,255,0.3); }
         .hex.lost { color: var(--danger); opacity: 0.3; text-shadow: none; }
 
-        #ui-bot-left { grid-column: 1; grid-row: 3; align-self: end; max-width: 450px; }
+        #ui-bot-left { grid-column: 1; grid-row: 3; align-self: end; max-width: 520px; }
         .log-title { font-size: 0.7rem; color: var(--text-dim); border-bottom: 1px solid var(--text-dim); padding-bottom: 5px; margin-bottom: 15px; letter-spacing: 2px;}
         .narrative { font-family: var(--font-sans); font-weight: 300; font-size: 0.85rem; line-height: 1.8; color: #a0a0a0; margin-bottom: 25px; }
-        .objective { font-size: 0.8rem; color: var(--accent); line-height: 1.6; border-left: 2px solid var(--accent); padding-left: 15px; background: rgba(198, 120, 221, 0.05); padding-top: 10px; padding-bottom: 10px; }
+        .objective {
+            font-size: 0.8rem; color: var(--accent); line-height: 1.6;
+            border-left: 2px solid var(--accent); padding-left: 15px;
+            background: rgba(198, 120, 221, 0.05); padding-top: 10px; padding-bottom: 10px; padding-right: 10px;
+        }
+        .objective .dim { color: rgba(198, 120, 221, 0.7); }
 
-        #ui-bot-right { grid-column: 2; grid-row: 3; justify-self: end; align-self: end; min-width: 350px; }
-        .telemetry-box { margin-bottom: 30px; font-size: 0.8rem; line-height: 2.2; }
-        .data-row { display: flex; justify-content: space-between; border-bottom: 1px dashed rgba(255,255,255,0.05); }
-        .data-label { color: #888; }
-        .data-val { font-weight: bold; color: var(--text-dim); letter-spacing: 1px; }
-        .data-val.corrupted { color: var(--danger); text-shadow: 0 0 5px rgba(191, 97, 106, 0.5); }
-        .data-val.decoded { color: var(--text-main); text-shadow: 0 0 8px rgba(255,255,255,0.4); }
+        #ui-bot-right { grid-column: 2; grid-row: 3; justify-self: end; align-self: end; min-width: 380px; max-width: 520px; }
+
+        .vars-box { margin-bottom: 22px; }
+        .vars-title {
+            font-size: 0.7rem; color: var(--text-dim);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            padding-bottom: 5px; margin-bottom: 10px; letter-spacing: 2px;
+        }
+        .vars-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+            background: rgba(0,0,0,0.35);
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 12px;
+            backdrop-filter: blur(8px);
+        }
+        .var-pill {
+            display: flex; justify-content: space-between; align-items: baseline;
+            border-bottom: 1px dashed rgba(255,255,255,0.06);
+            padding: 6px 0;
+            font-size: 0.78rem;
+        }
+        .var-name { color: rgba(255,255,255,0.78); letter-spacing: 1px; }
+        .var-val { color: var(--text-dim); font-weight: 700; letter-spacing: 1px; text-align: right; }
+
+        /* Distortion effect for locked/corrupted values */
+        .corrupt-text {
+            color: var(--danger);
+            text-shadow:
+                0 0 6px rgba(191,97,106,0.45),
+                2px 0 0 rgba(255,0,0,0.25),
+                -2px 0 0 rgba(0,200,255,0.18);
+            letter-spacing: 2px;
+            display: inline-block;
+            filter: contrast(140%);
+            animation: corruptJitter 0.12s infinite;
+        }
+        @keyframes corruptJitter {
+            0% { transform: translate(0,0); opacity: 1; }
+            25% { transform: translate(-0.6px, 0.2px); opacity: 0.92; }
+            50% { transform: translate(0.8px, -0.2px); opacity: 0.86; }
+            75% { transform: translate(-0.4px, -0.3px); opacity: 0.95; }
+            100% { transform: translate(0,0); opacity: 1; }
+        }
 
         .terminal { background: rgba(0,0,0,0.6); border: 1px solid var(--text-dim); padding: 20px; backdrop-filter: blur(8px); }
         .input-group { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; font-size: 0.9rem; }
@@ -162,6 +205,11 @@
             50% { transform: translate(-5px, 2px) scale(1.02); opacity: 0.8; }
             100% { transform: translate(5px, -2px) scale(0.98); opacity: 0.5; }
         }
+
+        @media (max-width: 900px) {
+            #ui-bot-right { min-width: unset; width: min(520px, 90vw); }
+            #ui-bot-left { max-width: min(520px, 90vw); }
+        }
     </style>
 </head>
 <body>
@@ -200,24 +248,31 @@
                 The fundamental oscillatory frequencies have shattered into statistical noise.<br><br>
                 Locate the core anchor nodes within the probability cloud to restore the universal harmonic function.
             </div>
-            <div class="objective">
-                > TARGET: Calculate the absolute maximum velocity (v_max) of the oscillator.<br>
-                > CONCEPT: Simple Harmonic Motion (SHM) kinematics.
+            <div class="objective" id="objective">
+                <div>
+                    &gt; TARGET: Calculate the absolute maximum velocity (v_max) of the oscillator.
+                </div>
+                <div style="margin-top:10px;">
+                    &gt; SCENARIO: Spring constant <span data-corrupt="k" class="dim corrupt-text">[ ΓΔΛ ]</span>, mass
+                    <span data-corrupt="m" class="dim corrupt-text">[ ΠΣΦ ]</span>, and amplitude <span data-corrupt="A" class="dim corrupt-text">[ ΘΞΨ ]</span>.
+                </div>
             </div>
             <button class="viz-trigger" id="viz-btn">VISUALIZE SCENARIO</button>
         </div>
 
         <div id="ui-bot-right" class="hud-corner">
-            <div class="log-title">EXTRACTED TELEMETRY</div>
-            <div class="telemetry-box" id="telemetry">
-                <div class="data-row"><span class="data-label">Spring Constant (k)</span><span class="data-val corrupted" id="node-0">[ UNKNOWN ]</span></div>
-                <div class="data-row"><span class="data-label">Oscillator Mass (m)</span><span class="data-val corrupted" id="node-1">[ UNKNOWN ]</span></div>
-                <div class="data-row"><span class="data-label">Amplitude (A)</span><span class="data-val corrupted" id="node-2">[ UNKNOWN ]</span></div>
+            <div class="vars-box">
+                <div class="vars-title">VARIABLE CACHE</div>
+                <div class="vars-grid" id="vars-grid">
+                    <div class="var-pill" data-varpill="k"><span class="var-name">k</span><span class="var-val corrupt-text" data-varval="k">[ ΓΔΛ ]</span></div>
+                    <div class="var-pill" data-varpill="m"><span class="var-name">m</span><span class="var-val corrupt-text" data-varval="m">[ ΠΣΦ ]</span></div>
+                    <div class="var-pill" data-varpill="A"><span class="var-name">A</span><span class="var-val corrupt-text" data-varval="A">[ ΘΞΨ ]</span></div>
+                </div>
             </div>
 
             <div class="terminal">
                 <div class="input-group">
-                    <span>> v_max = </span>
+                    <span>&gt; v_max = </span>
                     <input type="text" id="answer-input" autocomplete="off" disabled placeholder="LOCKED">
                     <span> m/s</span>
                 </div>
@@ -278,10 +333,15 @@
     }
 
     const CORRECT_ANSWER = "5";
-    const nodeData = [
-        "k = 400.0 N/m",
-        "m = 4.0 kg",
-        "A = 0.5 m"
+    const variables = {
+        k: { value: "400.0 N/m", unlocked: false },
+        m: { value: "4.0 kg", unlocked: false },
+        A: { value: "0.5 m", unlocked: false }
+    };
+    const nodeUnlocks = [
+        { unlock: ["k"] },
+        { unlock: ["m"] },
+        { unlock: ["A"] }
     ];
 
     let nodesExtracted = [false, false, false];
@@ -357,6 +417,39 @@
     const lerp = (a, b, t) => a + (b - a) * Math.min(Math.max(t, 0), 1);
     let stabilizeLerp = 0; 
 
+    // Greek distortion strings
+    function greekGibberish(len = 3) {
+        const chars = "ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ";
+        let s = "";
+        for (let i = 0; i < len; i++) s += chars[Math.floor(Math.random() * chars.length)];
+        return s;
+    }
+
+    function setObjectiveCorrupt(key, valueText) {
+        document.querySelectorAll(`[data-corrupt="${key}"]`).forEach(el => {
+            el.textContent = valueText;
+            el.classList.remove('dim');
+            el.classList.remove('corrupt-text');
+        });
+    }
+
+    function unlockVar(key) {
+        if (!variables[key] || variables[key].unlocked) return;
+        variables[key].unlocked = true;
+
+        const cacheVal = document.querySelector(`[data-varval="${key}"]`);
+        if (cacheVal) {
+            cacheVal.textContent = variables[key].value;
+            cacheVal.classList.remove('corrupt-text');
+        }
+
+        setObjectiveCorrupt(key, variables[key].value);
+    }
+
+    function allRequiredUnlocked() {
+        return Object.values(variables).every(v => v.unlocked);
+    }
+
     // --- INTERACTION ---
     window.addEventListener('mousedown', () => {
         if(hoveredNode !== -1 && !nodesExtracted[hoveredNode] && !isSolved && !isCollapsed) {
@@ -366,28 +459,12 @@
 
     function extractData(idx) {
         nodesExtracted[idx] = true;
-        const el = document.getElementById('node-' + idx);
-        el.classList.remove('corrupted');
-        const chars = "010101XYZ#*+&";
-        let ticks = 0;
-        
-        let interval = setInterval(() => {
-            ticks++;
-            if(ticks > 15) {
-                clearInterval(interval);
-                el.innerText = nodeData[idx];
-                el.classList.add('decoded');
-                checkAllExtracted();
-            } else {
-                let scram = "";
-                for(let i=0; i<8; i++) scram += chars[Math.floor(Math.random()*chars.length)];
-                el.innerText = scram;
-            }
-        }, 40);
+        nodeUnlocks[idx].unlock.forEach(unlockVar);
+        checkAllExtracted();
     }
 
     function checkAllExtracted() {
-        if(nodesExtracted.every(v => v === true)) {
+        if(nodesExtracted.every(v => v === true) && allRequiredUnlocked()) {
             let input = document.getElementById('answer-input');
             input.disabled = false; input.placeholder = ""; input.focus();
             let btn = document.getElementById('btn-inject');
@@ -427,7 +504,7 @@
     }
 
     function checkAnswer() {
-        if(!nodesExtracted.every(v => v === true) || isSolved || isCollapsed) return;
+        if(!nodesExtracted.every(v => v === true) || !allRequiredUnlocked() || isSolved || isCollapsed) return;
         let input = document.getElementById('answer-input');
         
         if(input.value.trim() === CORRECT_ANSWER) {
@@ -458,6 +535,26 @@
     document.getElementById('answer-input').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') checkAnswer();
     });
+
+    // Flicker corruption for objective + variable cache until unlocked
+    const corruptKeys = Object.keys(variables);
+    const objectiveFlicker = setInterval(() => {
+        if (isCollapsed || isSolved) return;
+
+        corruptKeys.forEach(k => {
+            if (!variables[k].unlocked) {
+                // objective
+                document.querySelectorAll(`[data-corrupt="${k}"]`).forEach(el => {
+                    el.textContent = `[ ${greekGibberish(3)} ]`;
+                });
+                // cache
+                const cacheVal = document.querySelector(`[data-varval="${k}"]`);
+                if (cacheVal) cacheVal.textContent = `[ ${greekGibberish(3)} ]`;
+            }
+        });
+
+        if (allRequiredUnlocked()) clearInterval(objectiveFlicker);
+    }, 140);
 
     // --- RENDER LOOP ---
     function animate() {
