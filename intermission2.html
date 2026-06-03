@@ -117,7 +117,7 @@
   <div id="terminal-container">
     <div class="inter-title">[ NEURAL RECONSTRUCTION LOG ]</div>
     <div id="dialogue-box"></div>
-    <button id="reply-btn" onclick="architectReply()">> [ ARCHITECT: Hold onto the memories. Let them merge—no matter what you lose. ]</button>
+    <button id="reply-btn" onclick="architectReply()">> [ARCHITECT: Hold onto the memories. Let them merge. Don't resist it or stop trying. ]</button>
   </div>
 
 <script>
@@ -264,13 +264,13 @@
     await typeLine("[ SYSTEM ] Momentum override successful. Hippocampus brought online.", "sys");
 
     await delay(900);
-    await typeLine("[ SUB-001 ] \"I... remember impact. Two bodies becoming one.\"", "sub", true, 45);
+    await typeLine("[ SUB-001 ] \"I... remember an impact. Two bodies becoming one.\"", "sub", true, 45);
 
     await delay(900);
-    await typeLine("[ SUB-001 ] \"It wasn't violence. It was fusion—like my thoughts finally agreeing to stay together.\"", "sub", false, 46);
+    await typeLine("[ SUB-001 ] \"It wasn't... violent, it was like a fusion of my memories and thoughts, finally agreeing to stay together.\"", "sub", false, 46);
 
     await delay(900);
-    await typeLine("[ SUB-001 ] \"Names are coming back. Faces. A hallway. A classroom. A sound like chalk on a board...\"", "sub", false, 48);
+    await typeLine("[ SUB-001 ] \"Names are coming back to me. Faces. A house. A smile... Wait, is that my family? \"", "sub", false, 48);
 
     await delay(900);
     btn.style.display = "block";
@@ -281,7 +281,7 @@
     btn.style.display = "none";
 
     // Architect line
-    await typeLine("> [ ARCHITECT: Hold onto the memories. Let them merge—no matter what you lose. ]", "arch", false, 18);
+    await typeLine("> [  ARCHITECT: Hold onto the memories. Let them merge. Don't resist it or stop trying. ]", "arch", false, 18);
 
     // Stabilize the core (memory consolidation)
     let stabilizeInt = setInterval(() => {
@@ -304,7 +304,7 @@
     let subLine2 = await typeLine("[ SUB-001 ] \"Architect... I can feel my past reattach. Keep going.\"", "stabilized", false, 55);
 
     await delay(1200);
-    await typeLine("[ SYSTEM ] Memory engrams stabilized. Preparing injection into Centripetal Topology...", "sys");
+    await typeLine("[ SYSTEM ] Memory engrams stabilized. Preparing injection into Centripetal Dimension...", "sys");
 
     await delay(500);
     let prog = document.createElement('div');
