@@ -295,10 +295,10 @@
     await typeLine("[ SUB-001 ] \"There was a thought that kept dropping out at the top of its arc.\"", "sub", true, 55);
 
     await delay(900);
-    await typeLine("[ SUB-001 ] \"Every time it reached the peak, it vanished—like it couldn't bear to stay in the world.\"", "sub", false, 52);
+    await typeLine("[ SUB-001 ] \"Every time it reached the peak, it vanished—like it couldn't bear its own existence.\"", "sub", false, 52);
 
     await delay(900);
-    await typeLine("[ SUB-001 ] \"Now it returns. Over and over. A closed path... a promise.\"", "sub", false, 55);
+    await typeLine("[ SUB-001 ] \"Now it returns. Over and over. A closed orbit, completed.\"", "sub", false, 55);
 
     await delay(900);
     btn.style.display = "block";
@@ -308,7 +308,7 @@
   async function architectReply() {
     btn.style.display = "none";
 
-    await typeLine("> [ ARCHITECT: Stay in the loop. Let the center hold you. ]", "arch", false, 18);
+    await typeLine("> [ ARCHITECT: Stay in the loop. Let the center hold you.]", "arch", false, 18);
 
     // Stabilize core + close the continuity ring
     let stabilizeInt = setInterval(() => {
@@ -328,7 +328,7 @@
 
     await delay(900);
 
-    let subLine2 = await typeLine("[ SUB-001 ] \"Logic and fear—no longer enemies. Just forces that share the same orbit.\"", "stabilized", false, 58);
+    let subLine2 = await typeLine("[ SUB-001 ] \"Logic and fear, no longer fighting eachother. Just things that share the same orbit.\"", "stabilized", false, 58);
 
     await delay(1200);
     await typeLine("[ SYSTEM ] Hemispheric bridge stable. Preparing injection into Rotational Matrix...", "sys");
