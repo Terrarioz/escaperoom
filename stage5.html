@@ -54,18 +54,12 @@
 
         #ui-bot-left { grid-column: 1; grid-row: 3; align-self: end; max-width: 450px; }
         .log-title { font-size: 0.7rem; color: var(--text-dim); border-bottom: 1px solid var(--text-dim); padding-bottom: 5px; margin-bottom: 15px; letter-spacing: 2px;}
-        .narrative { font-family: var(--font-sans); font-weight: 300; font-size: 0.85rem; line-height: 1.8; color: #a0a0a0; margin-bottom: 25px; }
+        .narrative { font-family: var(--font-sans); font-weight: 300; font-size: 0.85rem; line-height: 1.8; color: #a0a0a0; margin-bottom: 25px; text-transform: uppercase; letter-spacing: 1px; }
         .objective { font-size: 0.8rem; color: var(--accent); line-height: 1.6; border-left: 2px solid var(--accent); padding-left: 15px; background: rgba(198, 120, 221, 0.05); padding-top: 10px; padding-bottom: 10px; }
 
         #ui-bot-right { grid-column: 2; grid-row: 3; justify-self: end; align-self: end; min-width: 350px; }
-        .telemetry-box { margin-bottom: 30px; font-size: 0.8rem; line-height: 2.2; }
-        .data-row { display: flex; justify-content: space-between; border-bottom: 1px dashed rgba(255,255,255,0.05); }
-        .data-label { color: #888; }
-        .data-val { font-weight: bold; color: var(--text-dim); letter-spacing: 1px; }
-        .data-val.corrupted { color: var(--danger); text-shadow: 0 0 5px rgba(191, 97, 106, 0.5); }
-        .data-val.decoded { color: var(--text-main); text-shadow: 0 0 8px rgba(255,255,255,0.4); }
 
-        .terminal { background: rgba(0,0,0,0.6); border: 1px solid var(--text-dim); padding: 20px; backdrop-filter: blur(8px); }
+        .terminal { background: rgba(0,0,0,0.6); border: 1px solid var(--text-dim); padding: 20px; backdrop-filter: blur(8px); margin-top: 15px; }
         .input-group { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; font-size: 0.9rem; }
         
         input[type="text"] {
@@ -80,8 +74,39 @@
             color: var(--text-dim); font-family: var(--font-mono); padding: 10px; cursor: pointer;
             font-size: 0.75rem; letter-spacing: 2px; transition: 0.3s; text-transform: uppercase;
         }
+        button:hover { background: rgba(255,255,255,0.05); }
         button.ready { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 10px rgba(198, 120, 221, 0.2); }
         button.ready:hover { background: rgba(198, 120, 221, 0.15); box-shadow: 0 0 20px rgba(198, 120, 221, 0.4); }
+
+        /* MODAL STYLES */
+        #modal-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px);
+            z-index: 50; display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
+        }
+        #modal-overlay.active { opacity: 1; pointer-events: auto; }
+        
+        .modal-content {
+            width: 80vw; max-width: 900px; background: #08080a;
+            border: 1px solid var(--accent); box-shadow: 0 0 30px rgba(198, 120, 221, 0.1);
+            display: flex; flex-direction: column;
+        }
+        .modal-header {
+            padding: 15px 20px; border-bottom: 1px solid var(--text-dim);
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.8rem; letter-spacing: 2px; color: var(--accent);
+        }
+        .modal-header button {
+            width: auto; padding: 5px 15px; border-color: var(--text-dim);
+        }
+        .modal-body { padding: 40px; text-align: center; }
+
+        .diagram-svg { width: 100%; max-height: 400px; }
+        .diagram-text { font-family: var(--font-mono); font-size: 14px; transition: fill 0.3s; }
+        .diagram-text.corrupted { fill: var(--danger); animation: glitchText 0.2s infinite; }
+        .diagram-text.decoded { fill: var(--text-main); text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+        .axis-label { font-family: var(--font-mono); font-size: 12px; fill: var(--text-dim); }
 
         #reticle { 
             position: absolute; pointer-events: none; transition: 0.05s ease-out; opacity: 0; 
@@ -125,6 +150,11 @@
             50% { transform: translate(-5px, 2px) scale(1.02); opacity: 0.8; }
             100% { transform: translate(5px, -2px) scale(0.98); opacity: 0.5; }
         }
+        @keyframes glitchText {
+            0% { transform: translate(0,0); opacity: 1; }
+            50% { transform: translate(-2px, 1px); opacity: 0.8; }
+            100% { transform: translate(2px, -1px); opacity: 0.9; }
+        }
     </style>
 </head>
 <body>
@@ -140,6 +170,44 @@
     <div id="death-screen">
         <h1>CRITICAL FAILURE</h1>
         <p>DIMENSIONAL COLLAPSE IMMINENT</p>
+    </div>
+
+    <div id="modal-overlay">
+        <div class="modal-content hud-corner">
+            <div class="modal-header">
+                <span>TELEMETRY GRAPH // OSCILLATION KINEMATICS</span>
+                <button onclick="closeModal()">CLOSE</button>
+            </div>
+            <div class="modal-body">
+                <svg class="diagram-svg" viewBox="0 0 800 350">
+                    <g stroke="rgba(255,255,255,0.05)" stroke-width="1">
+                        <line x1="100" y1="50" x2="100" y2="300" stroke="#4c566a" stroke-width="2"/> 
+                        <line x1="100" y1="175" x2="700" y2="175" stroke="#4c566a" stroke-width="2"/> 
+                        
+                        <line x1="100" y1="50" x2="700" y2="50" stroke-dasharray="5,5" stroke="#c678dd"/> <line x1="100" y1="300" x2="700" y2="300" stroke-dasharray="5,5" stroke="#c678dd"/> </g>
+                
+                    <path d="M 100 175 Q 150 -75 200 175 T 300 175 T 400 175 T 500 175 T 600 175 T 700 175" 
+                    fill="none" stroke="#eceff4" stroke-width="3" stroke-linecap="round"/>
+                    
+                    <text x="80" y="55" class="axis-label" text-anchor="end" fill="#c678dd">0.5</text>
+                    <text x="80" y="180" class="axis-label" text-anchor="end">0.0</text>
+                    <text x="80" y="305" class="axis-label" text-anchor="end">-0.5</text>
+                    <text x="60" y="175" class="axis-label" text-anchor="middle" transform="rotate(-90 60 175)">Displacement x(m)</text>
+                    
+                    <text x="680" y="195" class="axis-label" text-anchor="middle">Time t(s)</text>
+
+                    <rect x="530" y="20" width="250" height="90" fill="rgba(0,0,0,0.6)" stroke="#c678dd" stroke-width="1"/>
+                    <text x="545" y="40" class="axis-label" fill="#c678dd">SYSTEM PARAMETERS:</text>
+                    
+                    <text id="svg-node-0" x="545" y="65" class="diagram-text corrupted">[ !?#@* ]</text>
+                    <text id="svg-node-1" x="545" y="90" class="diagram-text corrupted">[ *$#@! ]</text>
+                    
+                    <rect x="530" y="120" width="250" height="35" fill="rgba(0,0,0,0.6)" stroke="#4c566a" stroke-width="1"/>
+                    <text id="svg-node-2" x="545" y="143" class="diagram-text corrupted">[ &%#@! ]</text>
+
+                </svg>
+            </div>
+        </div>
     </div>
 
     <div id="hud-layer">
@@ -159,23 +227,17 @@
         <div id="ui-bot-left" class="hud-corner">
             <div class="log-title">OBSERVATION LOG</div>
             <div class="narrative">
-                The fundamental oscillatory frequencies have shattered into statistical noise.<br><br>
-                Locate the core anchor nodes within the probability cloud to restore the universal harmonic function.
+                Extract physical parameters and integrate with telemetry graph.
             </div>
             <div class="objective">
-                > TARGET: Calculate the absolute maximum velocity (v_max) of the oscillator.<br>
-                > CONCEPT: Simple Harmonic Motion (SHM) kinematics.
+                > TARGET: Calculate absolute maximum velocity (v_max).<br>
+                > CONCEPT: Analyze the graph for Amplitude (A), combine with system parameters (k, m).
             </div>
         </div>
 
         <div id="ui-bot-right" class="hud-corner">
-            <div class="log-title">EXTRACTED TELEMETRY</div>
-            <div class="telemetry-box" id="telemetry">
-                <div class="data-row"><span class="data-label">Spring Constant (k)</span><span class="data-val corrupted" id="node-0">[ UNKNOWN ]</span></div>
-                <div class="data-row"><span class="data-label">Oscillator Mass (m)</span><span class="data-val corrupted" id="node-1">[ UNKNOWN ]</span></div>
-                <div class="data-row"><span class="data-label">Amplitude (A)</span><span class="data-val corrupted" id="node-2">[ UNKNOWN ]</span></div>
-            </div>
-
+            <button onclick="openModal()" style="color: var(--accent); border-color: var(--accent); margin-bottom: 10px;">[ VISUALIZE SCENARIO ]</button>
+            
             <div class="terminal">
                 <div class="input-group">
                     <span>> v_max = </span>
@@ -198,13 +260,18 @@
     const nodeData = [
         "k = 400.0 N/m",
         "m = 4.0 kg",
-        "A = 0.5 m"
+        "v_max = A * √(k/m)" // Hint equation for Node 2
     ];
 
     let nodesExtracted = [false, false, false];
     let isSolved = false;
     let isCollapsed = false;
     let life = 5;
+
+    // Modal Logic
+    const modal = document.getElementById('modal-overlay');
+    function openModal() { modal.classList.add('active'); }
+    function closeModal() { modal.classList.remove('active'); }
 
     const canvas = document.getElementById('canvas-layer');
     const ctx = canvas.getContext('2d');
@@ -234,7 +301,6 @@
         return { x: cx + x * scale * size, y: cy + y * scale * size, s: scale };
     }
 
-    // --- HARMONIC POINT CLOUD ---
     const NUM_PARTICLES = 300;
     let pointCloud = [];
 
@@ -256,26 +322,19 @@
         });
     }
 
-    // --- NODE ADJUSTMENT ---
-    // Explicitly place the 3 nodes safely within the FOV
-    // (In Canvas, negative Y moves the element UP on the screen. -0.8 is a safe distance from the top)
     const dataNodes = [ 0, 150, 299 ];
     
-    // Left Satellite (safely centered vertically)
     pointCloud[0].cX = -2.0; pointCloud[0].cY = 0.5; pointCloud[0].cZ = 0.5; pointCloud[0].isNode = true;
-    
-    // Top-Center Satellite (moved down from -1.8 to -0.8 to stay visible)
     pointCloud[150].cX = 0; pointCloud[150].cY = -0.8; pointCloud[150].cZ = -0.5; pointCloud[150].isNode = true;
-    
-    // Right Satellite (safely centered vertically)
     pointCloud[299].cX = 2.0; pointCloud[299].cY = 0.5; pointCloud[299].cZ = 0.5; pointCloud[299].isNode = true;
 
     let projectedNodes = []; 
     const lerp = (a, b, t) => a + (b - a) * Math.min(Math.max(t, 0), 1);
     let stabilizeLerp = 0; 
 
-    // --- INTERACTION ---
-    window.addEventListener('mousedown', () => {
+    // Extract Data from Canvas Nodes to Diagram Variables
+    window.addEventListener('mousedown', (e) => {
+        if(modal.classList.contains('active')) return;
         if(hoveredNode !== -1 && !nodesExtracted[hoveredNode] && !isSolved && !isCollapsed) {
             extractData(hoveredNode);
         }
@@ -283,8 +342,8 @@
 
     function extractData(idx) {
         nodesExtracted[idx] = true;
-        const el = document.getElementById('node-' + idx);
-        el.classList.remove('corrupted');
+        const svgTextElement = document.getElementById('svg-node-' + idx);
+        
         const chars = "010101XYZ#*+&";
         let ticks = 0;
         
@@ -292,13 +351,14 @@
             ticks++;
             if(ticks > 15) {
                 clearInterval(interval);
-                el.innerText = nodeData[idx];
-                el.classList.add('decoded');
+                svgTextElement.textContent = nodeData[idx];
+                svgTextElement.classList.remove('corrupted');
+                svgTextElement.classList.add('decoded');
                 checkAllExtracted();
             } else {
                 let scram = "";
                 for(let i=0; i<8; i++) scram += chars[Math.floor(Math.random()*chars.length)];
-                el.innerText = scram;
+                svgTextElement.textContent = `[ ${scram} ]`;
             }
         }, 40);
     }
@@ -306,15 +366,21 @@
     function checkAllExtracted() {
         if(nodesExtracted.every(v => v === true)) {
             let input = document.getElementById('answer-input');
-            input.disabled = false; input.placeholder = ""; input.focus();
+            input.disabled = false; input.placeholder = ""; 
+            
             let btn = document.getElementById('btn-inject');
             btn.innerText = "INJECT SOLUTION";
             btn.classList.add('ready');
+            
+            const visBtn = document.querySelector('button[onclick="openModal()"]');
+            visBtn.style.boxShadow = "0 0 15px rgba(198, 120, 221, 0.6)";
+            setTimeout(()=> visBtn.style.boxShadow = "none", 1000);
         }
     }
 
     function triggerSystemCollapse() {
         isCollapsed = true;
+        closeModal();
         document.body.classList.add('glitch-heavy');
         
         let input = document.getElementById('answer-input');
@@ -376,7 +442,6 @@
         if (e.key === 'Enter') checkAnswer();
     });
 
-    // --- RENDER LOOP ---
     function animate() {
         ctx.clearRect(0, 0, w, h);
         
@@ -389,7 +454,7 @@
             time += 0.02 * timeScale; 
 
             let vignette = document.getElementById('focus-vignette');
-            if(inFocusZone) vignette.classList.add('active');
+            if(inFocusZone && !modal.classList.contains('active')) vignette.classList.add('active');
             else vignette.classList.remove('active');
 
             if(isSolved && stabilizeLerp < 1) stabilizeLerp += 0.015;
@@ -421,7 +486,6 @@
                 ctx.stroke();
             }
 
-            // PASS 1: Draw regular particles (so they don't cover the nodes)
             pointCloud.forEach((p, i) => {
                 if(p.isNode) return; 
                 
@@ -447,7 +511,6 @@
                 }
             });
 
-            // PASS 2: Draw the 3 Data Nodes ON TOP
             pointCloud.forEach((p, i) => {
                 if(!p.isNode) return;
                 let nIdx = dataNodes.indexOf(i);
@@ -467,9 +530,10 @@
                 let proj = project(r.x, r.y, r.z);
 
                 if(proj.s > 0) {
-                    let s = proj.s * 10; // Extra large
+                    let s = proj.s * 10; 
                     let dist = Math.hypot(proj.x - mx, proj.y - my);
-                    if(dist < 60 && !isSolved) hoveredNode = nIdx;
+                    
+                    if(dist < 50 && !isSolved && !modal.classList.contains('active')) hoveredNode = nIdx;
 
                     let color = nodesExtracted[nIdx] ? 'rgba(198, 120, 221, 1)' : 'rgba(255, 60, 60, 1)';
                     if(isSolved) color = 'rgba(255,255,255,0.8)';
@@ -482,9 +546,8 @@
                 }
             });
 
-            // Reticle Snapping
             let reticle = document.getElementById('reticle');
-            if(hoveredNode !== -1 && !nodesExtracted[hoveredNode]) {
+            if(hoveredNode !== -1 && !nodesExtracted[hoveredNode] && !modal.classList.contains('active')) {
                 reticle.style.opacity = 1;
                 reticle.style.left = projectedNodes[hoveredNode].x + 'px';
                 reticle.style.top = projectedNodes[hoveredNode].y + 'px';
@@ -501,7 +564,6 @@
             }
 
         } else {
-            // SYSTEM COLLAPSE
             ctx.globalCompositeOperation = 'lighter';
             ctx.fillStyle = 'rgba(255, 60, 60, 0.9)'; 
             
